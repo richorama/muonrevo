@@ -203,7 +203,7 @@ module.exports = React.createClass({
     }
 });
 
-},{"./page.jsx":4,"react":184}],3:[function(require,module,exports){
+},{"./page.jsx":4,"react":199}],3:[function(require,module,exports){
 "use strict";
 
 var React = require('react');
@@ -241,7 +241,7 @@ module.exports = React.createClass({
     }
 });
 
-},{"react":184}],4:[function(require,module,exports){
+},{"react":199}],4:[function(require,module,exports){
 "use strict";
 
 var React = require('react');
@@ -284,7 +284,7 @@ module.exports = React.createClass({
     }
 });
 
-},{"react":184}],5:[function(require,module,exports){
+},{"react":199}],5:[function(require,module,exports){
 "use strict";
 
 var React = require('react');
@@ -333,7 +333,7 @@ module.exports = React.createClass({
 
 });
 
-},{"react":184}],6:[function(require,module,exports){
+},{"react":199}],6:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -372,7 +372,7 @@ function getMenu() {
     }];
 }
 
-},{"../lib/routie":8,"./loading.jsx":2,"./menu.jsx":3,"react":184,"react-dom":33}],7:[function(require,module,exports){
+},{"../lib/routie":9,"./loading.jsx":2,"./menu.jsx":3,"react":199,"react-dom":48}],7:[function(require,module,exports){
 'use strict';
 
 var React = require('react');
@@ -380,30 +380,74 @@ var routie = require('./lib/routie');
 var Page = require('./components/page.jsx');
 var Panel = require('./components/panel.jsx');
 var render = require('./components/render.jsx');
+var storage = require('./lib/storage');
+var dbxUtil = require('./lib/dbxUtils');
 
 routie('', home);
 routie('/', home);
 
 function home() {
-    render(React.createElement(
-        Page,
-        { icon: 'fa-home', title: 'Hello World' },
-        React.createElement(
-            Panel,
-            { title: 'Foo' },
+    render.loading();
+
+    var dbx = dbxUtil.getDbx();
+    dbx.filesListFolder({ path: '' }).then(function (files) {
+        console.log(files);
+        render(React.createElement(
+            Page,
+            { icon: 'fa-home', title: 'Hello World' },
             React.createElement(
-                'h1',
-                null,
-                'Hello World'
+                Panel,
+                { title: 'Foo' },
+                React.createElement(
+                    'h1',
+                    null,
+                    'Hello World'
+                )
             )
-        )
-    ), '#/');
+        ), '#/');
+    }).catch(dbxUtil.handleError);
 }
+
+routie('access_token=*', function (query) {
+    var token = query.split('&')[0];
+    storage.put('accessToken', token);
+    routie('/');
+
+    /*
+    cursor
+    entries
+    has_more
+    */
+});
 
 // do this after all the routes have been set
 routie.reload();
 
-},{"./components/page.jsx":4,"./components/panel.jsx":5,"./components/render.jsx":6,"./lib/routie":8,"react":184}],8:[function(require,module,exports){
+},{"./components/page.jsx":4,"./components/panel.jsx":5,"./components/render.jsx":6,"./lib/dbxUtils":8,"./lib/routie":9,"./lib/storage":10,"react":199}],8:[function(require,module,exports){
+'use strict';
+
+var Dropbox = require('dropbox');
+var dbx = new Dropbox({ clientId: "ra1zvn70dm90i04" });
+var storage = require('./storage');
+var initialised = false;
+
+module.exports.getDbx = function () {
+    // already initialised, so return client
+    if (initialised) return dbx;
+
+    // not initialised, but we've got a stored token
+    var accessToken = storage.get("accessToken");
+    if (accessToken) {
+        dbx.setAccessToken(accessToken);
+        initialised = true;
+        return dbx;
+    }
+
+    // no token, let's redirect and get one
+    window.location.href = dbx.getAuthenticationUrl('http://localhost:8080/');
+};
+
+},{"./storage":10,"dropbox":17}],9:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -608,7 +652,3245 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
   return routie;
 });
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
+"use strict";
+
+// polyfill localStorage with temp store    
+var store = {};
+
+if (localStorage) {
+    store = localStorage;
+}
+
+module.exports.put = function (key, value) {
+    store[key] = value;
+};
+
+module.exports.get = function (key) {
+    return store[key];
+};
+
+module.exports.del = function (key) {
+    if (store.removeItem) {
+        store.removeItem(key);
+    } else {
+        delete store[key];
+    }
+};
+
+},{}],11:[function(require,module,exports){
+
+/**
+ * Expose `Emitter`.
+ */
+
+if (typeof module !== 'undefined') {
+  module.exports = Emitter;
+}
+
+/**
+ * Initialize a new `Emitter`.
+ *
+ * @api public
+ */
+
+function Emitter(obj) {
+  if (obj) return mixin(obj);
+};
+
+/**
+ * Mixin the emitter properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in Emitter.prototype) {
+    obj[key] = Emitter.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Listen on the given `event` with `fn`.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.on =
+Emitter.prototype.addEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+  (this._callbacks['$' + event] = this._callbacks['$' + event] || [])
+    .push(fn);
+  return this;
+};
+
+/**
+ * Adds an `event` listener that will be invoked a single
+ * time then automatically removed.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.once = function(event, fn){
+  function on() {
+    this.off(event, on);
+    fn.apply(this, arguments);
+  }
+
+  on.fn = fn;
+  this.on(event, on);
+  return this;
+};
+
+/**
+ * Remove the given callback for `event` or all
+ * registered callbacks.
+ *
+ * @param {String} event
+ * @param {Function} fn
+ * @return {Emitter}
+ * @api public
+ */
+
+Emitter.prototype.off =
+Emitter.prototype.removeListener =
+Emitter.prototype.removeAllListeners =
+Emitter.prototype.removeEventListener = function(event, fn){
+  this._callbacks = this._callbacks || {};
+
+  // all
+  if (0 == arguments.length) {
+    this._callbacks = {};
+    return this;
+  }
+
+  // specific event
+  var callbacks = this._callbacks['$' + event];
+  if (!callbacks) return this;
+
+  // remove all handlers
+  if (1 == arguments.length) {
+    delete this._callbacks['$' + event];
+    return this;
+  }
+
+  // remove specific handler
+  var cb;
+  for (var i = 0; i < callbacks.length; i++) {
+    cb = callbacks[i];
+    if (cb === fn || cb.fn === fn) {
+      callbacks.splice(i, 1);
+      break;
+    }
+  }
+  return this;
+};
+
+/**
+ * Emit `event` with the given args.
+ *
+ * @param {String} event
+ * @param {Mixed} ...
+ * @return {Emitter}
+ */
+
+Emitter.prototype.emit = function(event){
+  this._callbacks = this._callbacks || {};
+  var args = [].slice.call(arguments, 1)
+    , callbacks = this._callbacks['$' + event];
+
+  if (callbacks) {
+    callbacks = callbacks.slice(0);
+    for (var i = 0, len = callbacks.length; i < len; ++i) {
+      callbacks[i].apply(this, args);
+    }
+  }
+
+  return this;
+};
+
+/**
+ * Return array of callbacks for `event`.
+ *
+ * @param {String} event
+ * @return {Array}
+ * @api public
+ */
+
+Emitter.prototype.listeners = function(event){
+  this._callbacks = this._callbacks || {};
+  return this._callbacks['$' + event] || [];
+};
+
+/**
+ * Check if this emitter has `event` handlers.
+ *
+ * @param {String} event
+ * @return {Boolean}
+ * @api public
+ */
+
+Emitter.prototype.hasListeners = function(event){
+  return !! this.listeners(event).length;
+};
+
+},{}],12:[function(require,module,exports){
+var request = require('superagent');
+var Promise = require('es6-promise').Promise;
+var getBaseURL = require('./get-base-url');
+var httpHeaderSafeJson = require('./http-header-safe-json');
+
+var buildCustomError;
+var downloadRequest;
+var nodeBinaryParser;
+
+// Register a handler that will instruct superagent how to parse the response
+request.parse['application/octect-stream'] = function (obj) {
+  return obj;
+};
+
+// This doesn't match what was spec'd in paper doc yet
+buildCustomError = function (error, response) {
+  return {
+    status: error.status,
+    error: (response ? response.text : null) || error.toString(),
+    response: response
+  };
+};
+
+nodeBinaryParser = function (res, done) {
+  res.text = '';
+  res.setEncoding('binary');
+  res.on('data', function (chunk) { res.text += chunk; });
+  res.on('end', function () {
+    done();
+  });
+};
+
+downloadRequest = function (path, args, auth, host, accessToken, selectUser) {
+  if (auth !== 'user') {
+    throw new Error('Unexpected auth type: ' + auth);
+  }
+
+  var promiseFunction = function (resolve, reject) {
+    var apiRequest;
+
+    function success(data) {
+      if (resolve) {
+        resolve(data);
+      }
+    }
+
+    function failure(error) {
+      if (reject) {
+        reject(error);
+      }
+    }
+
+    function responseHandler(error, response) {
+      var data;
+      if (error) {
+        failure(buildCustomError(error, response));
+      } else {
+        // In the browser, the file is passed as a blob and in node the file is
+        // passed as a string of binary data.
+        data = JSON.parse(response.headers['dropbox-api-result']);
+        if (response.xhr) {
+          data.fileBlob = response.xhr.response;
+        } else {
+          data.fileBinary = response.res.text;
+        }
+        success(data);
+      }
+    }
+
+    apiRequest = request.post(getBaseURL(host) + path)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Dropbox-API-Arg', httpHeaderSafeJson(args))
+      .on('request', function () {
+        if (this.xhr) {
+          this.xhr.responseType = 'blob';
+        }
+      });
+
+    if (selectUser) {
+      apiRequest = apiRequest.set('Dropbox-API-Select-User', selectUser);
+    }
+
+    // Apply the node binary parser to the response if executing in node
+    if (typeof window === 'undefined') {
+      apiRequest
+        .buffer(true)
+        .parse(nodeBinaryParser)
+        .end(responseHandler);
+    } else {
+      apiRequest.end(responseHandler);
+    }
+  };
+
+  return new Promise(promiseFunction);
+};
+
+module.exports = downloadRequest;
+
+},{"./get-base-url":15,"./http-header-safe-json":16,"es6-promise":23,"superagent":200}],13:[function(require,module,exports){
+var REQUEST_CONSTANTS = require('./request-constants');
+var DropboxBase;
+
+// Polyfill Object.assign() for older browsers
+require('./object-assign-polyfill');
+
+/**
+ * @private
+ * @class DropboxBase
+ * @classdesc The main Dropbox SDK class. This contains the methods that are
+ * shared between Dropbox and DropboxTeam classes. It is marked as private so
+ * that it doesn't show up in the docs because it is never used directly.
+ * @arg {Object} options
+ * @arg {String} [options.accessToken] - An access token for making authenticated
+ * requests.
+ * @arg {String} [options.clientId] - The client id fo ryour app. Used to create
+ * authentication URL.
+ * @arg {Number} [options.selectUser] - User is the team access token would like
+ * to act as.
+ */
+DropboxBase = function (options) {
+  options = options || {};
+  this.accessToken = options.accessToken;
+  this.clientId = options.clientId;
+  this.selectUser = options.selectUser;
+};
+
+/**
+ * Set the access token used to authenticate requests to the API.
+ * @arg {String} accessToken - An access token
+ * @returns {undefined}
+ */
+DropboxBase.prototype.setAccessToken = function (accessToken) {
+  this.accessToken = accessToken;
+};
+
+/**
+ * Get the access token
+ * @returns {String} Access token
+ */
+DropboxBase.prototype.getAccessToken = function () {
+  return this.accessToken;
+};
+
+/**
+ * Set the client id, which is used to help gain an access token.
+ * @arg {String} clientId - Your apps client id
+ * @returns {undefined}
+ */
+DropboxBase.prototype.setClientId = function (clientId) {
+  this.clientId = clientId;
+};
+
+/**
+ * Get the client id
+ * @returns {String} Client id
+ */
+DropboxBase.prototype.getClientId = function () {
+  return this.clientId;
+};
+
+/**
+ * Get a URL that can be used to authenticate users for the Dropbox API.
+ * @arg {String} redirectUri - A URL to redirect the user to after
+ * authenticating. This must be added to your app through the admin interface.
+ * @arg {String} [state] - State that will be returned in the redirect URL to help
+ * prevent cross site scripting attacks.
+ * @returns {String} Url to send user to for Dropbox API authentication
+ */
+DropboxBase.prototype.getAuthenticationUrl = function (redirectUri, state) {
+  var AUTH_BASE_URL = 'https://www.dropbox.com/oauth2/authorize';
+  var clientId = this.getClientId();
+  var authUrl;
+  if (!clientId) {
+    throw new Error('A client id is required. You can set the client id using .setClientId().');
+  }
+  if (!redirectUri) {
+    throw new Error('A redirect uri is required.');
+  }
+
+  authUrl = AUTH_BASE_URL + '?response_type=token&client_id=' + clientId;
+  if (redirectUri) {
+    authUrl = authUrl + '&redirect_uri=' + redirectUri;
+  }
+  if (state) {
+    authUrl = authUrl + '&state=' + state;
+  }
+  return authUrl;
+};
+
+/**
+ * Called when the authentication succeed
+ * @callback successCallback
+ * @param {string} access_token The application's access token
+ */
+
+/**
+ * Called when the authentication failed.
+ * @callback errorCallback
+ */
+
+/**
+ * An authentication process that works with cordova applications.
+ * @param {successCallback} successCallback
+ * @param {errorCallback} errorCallback 
+ */
+DropboxBase.prototype.authenticateWithCordova = function (successCallback, errorCallback)
+{
+  var redirect_url = 'https://www.dropbox.com/1/oauth2/redirect_receiver';
+  var url = this.getAuthenticationUrl(redirect_url);
+  var browser = window.open(url, '_blank');
+  var removed = false;
+
+  var onLoadError = function(event) {
+    // Try to avoid a browser crash on browser.close().
+    window.setTimeout(function() { browser.close() }, 10);
+    errorCallback();
+  }
+
+  var onLoadStop = function(event) {
+    var error_label = '&error=';
+    var error_index = event.url.indexOf(error_label);
+
+    if (error_index > -1) {
+      // Try to avoid a browser crash on browser.close().
+      window.setTimeout(function() { browser.close() }, 10);
+      errorCallback();
+    } else { 
+      var access_token_label = '#access_token=';
+      var access_token_index = event.url.indexOf(access_token_label);
+      var token_type_index = event.url.indexOf('&token_type=');
+      if (access_token_index > -1) {
+        access_token_index += access_token_label.length;
+        // Try to avoid a browser crash on browser.close().
+        window.setTimeout(function() { browser.close() }, 10);
+
+        var access_token = event.url.substring(access_token_index, token_type_index);
+        successCallback(access_token);
+      }
+    }
+  };
+
+  var onExit = function(event) {
+    if(removed) {
+      return 
+    }
+    browser.removeEventListener('loaderror', onLoadError);
+    browser.removeEventListener('loadstop', onLoadStop);
+    browser.removeEventListener('exit', onExit);
+    removed = true
+  };
+  
+  browser.addEventListener('loaderror', onLoadError);
+  browser.addEventListener('loadstop', onLoadStop);
+  browser.addEventListener('exit', onExit)
+}
+
+DropboxBase.prototype.request = function (path, args, auth, host, style) {
+  var request = null;
+  switch (style) {
+    case REQUEST_CONSTANTS.RPC:
+      request = this.getRpcRequest();
+      break;
+    case REQUEST_CONSTANTS.DOWNLOAD:
+      request = this.getDownloadRequest();
+      break;
+    case REQUEST_CONSTANTS.UPLOAD:
+      request = this.getUploadRequest();
+      break;
+    default:
+      throw new Error('Invalid request style: ' + style);
+  }
+
+  return request(path, args, auth, host, this.getAccessToken(), this.selectUser);
+};
+
+DropboxBase.prototype.setRpcRequest = function (newRpcRequest) {
+  DropboxBase.prototype.rpcRequest = newRpcRequest;
+};
+
+DropboxBase.prototype.getRpcRequest = function () {
+  if (DropboxBase.prototype.rpcRequest === undefined) {
+    DropboxBase.prototype.rpcRequest = require('./rpc-request');
+  }
+
+  return DropboxBase.prototype.rpcRequest;
+};
+
+DropboxBase.prototype.setDownloadRequest = function (newDownloadRequest) {
+  DropboxBase.prototype.downloadRequest = newDownloadRequest;
+};
+
+DropboxBase.prototype.getDownloadRequest = function () {
+  if (DropboxBase.prototype.downloadRequest === undefined) {
+    DropboxBase.prototype.downloadRequest = require('./download-request');
+  }
+
+  return DropboxBase.prototype.downloadRequest;
+};
+
+DropboxBase.prototype.setUploadRequest = function (newUploadRequest) {
+  DropboxBase.prototype.uploadRequest = newUploadRequest;
+};
+
+DropboxBase.prototype.getUploadRequest = function () {
+  if (DropboxBase.prototype.uploadRequest === undefined) {
+    DropboxBase.prototype.uploadRequest = require('./upload-request');
+  }
+
+  return DropboxBase.prototype.uploadRequest;
+};
+
+module.exports = DropboxBase;
+
+},{"./download-request":12,"./object-assign-polyfill":18,"./request-constants":19,"./rpc-request":21,"./upload-request":22}],14:[function(require,module,exports){
+var DropboxBase = require('./dropbox-base');
+var routes = require('./routes');
+var Dropbox;
+
+/**
+ * @class Dropbox
+ * @extends DropboxBase
+ * @classdesc The Dropbox SDK class that provides methods to read, write and
+ * create files or folders in a user's Dropbox.
+ * @arg {Object} options
+ * @arg {String} [options.accessToken] - An access token for making authenticated
+ * requests.
+ * @arg {String} [options.clientId] - The client id for your app. Used to create
+ * authentication URL.
+ * @arg {String} [options.selectUser] - Select user is only used by DropboxTeam.
+ * It specifies which user the team access token should be acting as.
+ */
+Dropbox = function (options) {
+  DropboxBase.call(this, options);
+};
+
+Dropbox.prototype = Object.create(DropboxBase.prototype);
+
+Dropbox.prototype.constructor = Dropbox;
+
+// Add the user endpoint methods to the prototype
+Dropbox.prototype = Object.assign(Dropbox.prototype, routes);
+
+Dropbox.prototype.filesGetSharedLinkFile = function (arg) {
+  return this.request('sharing/get_shared_link_file', arg, 'api', 'download');
+};
+
+module.exports = Dropbox;
+
+},{"./dropbox-base":13,"./routes":20}],15:[function(require,module,exports){
+function getBaseURL(host) {
+  return 'https://' + host + '.dropboxapi.com/2/';
+}
+
+module.exports = getBaseURL;
+
+},{}],16:[function(require,module,exports){
+// source https://www.dropboxforum.com/t5/API-support/HTTP-header-quot-Dropbox-API-Arg-quot-could-not-decode-input-as/m-p/173823/highlight/true#M6786
+var charsToEncode = /[\u007f-\uffff]/g;
+
+function httpHeaderSafeJson(args) {
+  return JSON.stringify(args).replace(charsToEncode, function (c) {
+    return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4);
+  });
+}
+
+module.exports = httpHeaderSafeJson;
+
+},{}],17:[function(require,module,exports){
+var Dropbox = require('./dropbox');
+
+module.exports = Dropbox;
+
+},{"./dropbox":14}],18:[function(require,module,exports){
+// Polyfill object.assign for legacy browsers
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign
+if (typeof Object.assign !== 'function') {
+  (function () {
+    Object.assign = function (target) {
+      'use strict';
+      var output;
+      var index;
+      var source;
+      var nextKey;
+      if (target === undefined || target === null) {
+        throw new TypeError('Cannot convert undefined or null to object');
+      }
+
+      output = Object(target);
+      for (index = 1; index < arguments.length; index++) {
+        source = arguments[index];
+        if (source !== undefined && source !== null) {
+          for (nextKey in source) {
+            if (source.hasOwnProperty(nextKey)) {
+              output[nextKey] = source[nextKey];
+            }
+          }
+        }
+      }
+      return output;
+    };
+  }());
+}
+
+},{}],19:[function(require,module,exports){
+var REQUEST_CONSTANTS = {
+  RPC: 'rpc',
+  DOWNLOAD: 'download',
+  UPLOAD: 'upload'
+};
+
+module.exports = REQUEST_CONSTANTS;
+
+},{}],20:[function(require,module,exports){
+// Auto-generated by Stone, do not modify.
+var routes = {};
+
+/**
+ * Creates an OAuth 2.0 access token from the supplied OAuth 1.0 access token.
+ * @function Dropbox#authTokenFromOauth1
+ * @arg {AuthTokenFromOAuth1Arg} arg - The request parameters.
+ * @returns {Promise.<AuthTokenFromOAuth1Result, Error.<AuthTokenFromOAuth1Error>>}
+ */
+routes.authTokenFromOauth1 = function (arg) {
+  return this.request('auth/token/from_oauth1', arg, 'app', 'api', 'rpc');
+};
+
+/**
+ * Disables the access token used to authenticate the call.
+ * @function Dropbox#authTokenRevoke
+ * @arg {void} arg - The request parameters.
+ * @returns {Promise.<void, Error.<void>>}
+ */
+routes.authTokenRevoke = function (arg) {
+  return this.request('auth/token/revoke', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the metadata for a file or folder. This is an alpha endpoint
+ * compatible with the properties API. Note: Metadata for the root folder is
+ * unsupported.
+ * @function Dropbox#filesAlphaGetMetadata
+ * @arg {FilesAlphaGetMetadataArg} arg - The request parameters.
+ * @returns {Promise.<(FilesFileMetadata|FilesFolderMetadata|FilesDeletedMetadata), Error.<FilesAlphaGetMetadataError>>}
+ */
+routes.filesAlphaGetMetadata = function (arg) {
+  return this.request('files/alpha/get_metadata', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a new file with the contents provided in the request. Note that this
+ * endpoint is part of the properties API alpha and is slightly different from
+ * upload. Do not use this to upload a file larger than 150 MB. Instead, create
+ * an upload session with upload_session/start.
+ * @function Dropbox#filesAlphaUpload
+ * @arg {FilesCommitInfoWithProperties} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesUploadErrorWithProperties>>}
+ */
+routes.filesAlphaUpload = function (arg) {
+  return this.request('files/alpha/upload', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * Copy a file or folder to a different location in the user's Dropbox. If the
+ * source path is a folder all its contents will be copied.
+ * @function Dropbox#filesCopy
+ * @deprecated
+ * @arg {FilesRelocationArg} arg - The request parameters.
+ * @returns {Promise.<(FilesFileMetadata|FilesFolderMetadata|FilesDeletedMetadata), Error.<FilesRelocationError>>}
+ */
+routes.filesCopy = function (arg) {
+  return this.request('files/copy', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Copy multiple files or folders to different locations at once in the user's
+ * Dropbox. If RelocationBatchArg.allow_shared_folder is false, this route is
+ * atomic. If on entry failes, the whole transaction will abort. If
+ * RelocationBatchArg.allow_shared_folder is true, not atomicity is guaranteed,
+ * but you will be able to copy the contents of shared folders to new locations.
+ * This route will return job ID immediately and do the async copy job in
+ * background. Please use copy_batch/check to check the job status.
+ * @function Dropbox#filesCopyBatch
+ * @arg {FilesRelocationBatchArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationBatchLaunch, Error.<void>>}
+ */
+routes.filesCopyBatch = function (arg) {
+  return this.request('files/copy_batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for copy_batch. If success, it
+ * returns list of results for each entry.
+ * @function Dropbox#filesCopyBatchCheck
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationBatchJobStatus, Error.<AsyncPollError>>}
+ */
+routes.filesCopyBatchCheck = function (arg) {
+  return this.request('files/copy_batch/check', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get a copy reference to a file or folder. This reference string can be used
+ * to save that file or folder to another user's Dropbox by passing it to
+ * copy_reference/save.
+ * @function Dropbox#filesCopyReferenceGet
+ * @arg {FilesGetCopyReferenceArg} arg - The request parameters.
+ * @returns {Promise.<FilesGetCopyReferenceResult, Error.<FilesGetCopyReferenceError>>}
+ */
+routes.filesCopyReferenceGet = function (arg) {
+  return this.request('files/copy_reference/get', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Save a copy reference returned by copy_reference/get to the user's Dropbox.
+ * @function Dropbox#filesCopyReferenceSave
+ * @arg {FilesSaveCopyReferenceArg} arg - The request parameters.
+ * @returns {Promise.<FilesSaveCopyReferenceResult, Error.<FilesSaveCopyReferenceError>>}
+ */
+routes.filesCopyReferenceSave = function (arg) {
+  return this.request('files/copy_reference/save', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Copy a file or folder to a different location in the user's Dropbox. If the
+ * source path is a folder all its contents will be copied.
+ * @function Dropbox#filesCopyV2
+ * @arg {FilesRelocationArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationResult, Error.<FilesRelocationError>>}
+ */
+routes.filesCopyV2 = function (arg) {
+  return this.request('files/copy_v2', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a folder at a given path.
+ * @function Dropbox#filesCreateFolder
+ * @deprecated
+ * @arg {FilesCreateFolderArg} arg - The request parameters.
+ * @returns {Promise.<FilesFolderMetadata, Error.<FilesCreateFolderError>>}
+ */
+routes.filesCreateFolder = function (arg) {
+  return this.request('files/create_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a folder at a given path.
+ * @function Dropbox#filesCreateFolderV2
+ * @arg {FilesCreateFolderArg} arg - The request parameters.
+ * @returns {Promise.<FilesCreateFolderResult, Error.<FilesCreateFolderError>>}
+ */
+routes.filesCreateFolderV2 = function (arg) {
+  return this.request('files/create_folder_v2', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Delete the file or folder at a given path. If the path is a folder, all its
+ * contents will be deleted too. A successful response indicates that the file
+ * or folder was deleted. The returned metadata will be the corresponding
+ * FileMetadata or FolderMetadata for the item at time of deletion, and not a
+ * DeletedMetadata object.
+ * @function Dropbox#filesDelete
+ * @deprecated
+ * @arg {FilesDeleteArg} arg - The request parameters.
+ * @returns {Promise.<(FilesFileMetadata|FilesFolderMetadata|FilesDeletedMetadata), Error.<FilesDeleteError>>}
+ */
+routes.filesDelete = function (arg) {
+  return this.request('files/delete', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Delete multiple files/folders at once. This route is asynchronous, which
+ * returns a job ID immediately and runs the delete batch asynchronously. Use
+ * delete_batch/check to check the job status.
+ * @function Dropbox#filesDeleteBatch
+ * @arg {FilesDeleteBatchArg} arg - The request parameters.
+ * @returns {Promise.<FilesDeleteBatchLaunch, Error.<void>>}
+ */
+routes.filesDeleteBatch = function (arg) {
+  return this.request('files/delete_batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for delete_batch. If success, it
+ * returns list of result for each entry.
+ * @function Dropbox#filesDeleteBatchCheck
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<FilesDeleteBatchJobStatus, Error.<AsyncPollError>>}
+ */
+routes.filesDeleteBatchCheck = function (arg) {
+  return this.request('files/delete_batch/check', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Delete the file or folder at a given path. If the path is a folder, all its
+ * contents will be deleted too. A successful response indicates that the file
+ * or folder was deleted. The returned metadata will be the corresponding
+ * FileMetadata or FolderMetadata for the item at time of deletion, and not a
+ * DeletedMetadata object.
+ * @function Dropbox#filesDeleteV2
+ * @arg {FilesDeleteArg} arg - The request parameters.
+ * @returns {Promise.<FilesDeleteResult, Error.<FilesDeleteError>>}
+ */
+routes.filesDeleteV2 = function (arg) {
+  return this.request('files/delete_v2', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Download a file from a user's Dropbox.
+ * @function Dropbox#filesDownload
+ * @arg {FilesDownloadArg} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesDownloadError>>}
+ */
+routes.filesDownload = function (arg) {
+  return this.request('files/download', arg, 'user', 'content', 'download');
+};
+
+/**
+ * Returns the metadata for a file or folder. Note: Metadata for the root folder
+ * is unsupported.
+ * @function Dropbox#filesGetMetadata
+ * @arg {FilesGetMetadataArg} arg - The request parameters.
+ * @returns {Promise.<(FilesFileMetadata|FilesFolderMetadata|FilesDeletedMetadata), Error.<FilesGetMetadataError>>}
+ */
+routes.filesGetMetadata = function (arg) {
+  return this.request('files/get_metadata', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get a preview for a file. Currently, PDF previews are generated for files
+ * with the following extensions: .ai, .doc, .docm, .docx, .eps, .odp, .odt,
+ * .pps, .ppsm, .ppsx, .ppt, .pptm, .pptx, .rtf. HTML previews are generated for
+ * files with the following extensions: .csv, .ods, .xls, .xlsm, .xlsx. Other
+ * formats will return an unsupported extension error.
+ * @function Dropbox#filesGetPreview
+ * @arg {FilesPreviewArg} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesPreviewError>>}
+ */
+routes.filesGetPreview = function (arg) {
+  return this.request('files/get_preview', arg, 'user', 'content', 'download');
+};
+
+/**
+ * Get a temporary link to stream content of a file. This link will expire in
+ * four hours and afterwards you will get 410 Gone. Content-Type of the link is
+ * determined automatically by the file's mime type.
+ * @function Dropbox#filesGetTemporaryLink
+ * @arg {FilesGetTemporaryLinkArg} arg - The request parameters.
+ * @returns {Promise.<FilesGetTemporaryLinkResult, Error.<FilesGetTemporaryLinkError>>}
+ */
+routes.filesGetTemporaryLink = function (arg) {
+  return this.request('files/get_temporary_link', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get a thumbnail for an image. This method currently supports files with the
+ * following file extensions: jpg, jpeg, png, tiff, tif, gif and bmp. Photos
+ * that are larger than 20MB in size won't be converted to a thumbnail.
+ * @function Dropbox#filesGetThumbnail
+ * @arg {FilesThumbnailArg} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesThumbnailError>>}
+ */
+routes.filesGetThumbnail = function (arg) {
+  return this.request('files/get_thumbnail', arg, 'user', 'content', 'download');
+};
+
+/**
+ * Starts returning the contents of a folder. If the result's
+ * ListFolderResult.has_more field is true, call list_folder/continue with the
+ * returned ListFolderResult.cursor to retrieve more entries. If you're using
+ * ListFolderArg.recursive set to true to keep a local cache of the contents of
+ * a Dropbox account, iterate through each entry in order and process them as
+ * follows to keep your local state in sync: For each FileMetadata, store the
+ * new entry at the given path in your local state. If the required parent
+ * folders don't exist yet, create them. If there's already something else at
+ * the given path, replace it and remove all its children. For each
+ * FolderMetadata, store the new entry at the given path in your local state. If
+ * the required parent folders don't exist yet, create them. If there's already
+ * something else at the given path, replace it but leave the children as they
+ * are. Check the new entry's FolderSharingInfo.read_only and set all its
+ * children's read-only statuses to match. For each DeletedMetadata, if your
+ * local state has something at the given path, remove it and all its children.
+ * If there's nothing at the given path, ignore this entry. Note:
+ * auth.RateLimitError may be returned if multiple list_folder or
+ * list_folder/continue calls with same parameters are made simultaneously by
+ * same API app for same user. If your app implements retry logic, please hold
+ * off the retry until the previous request finishes.
+ * @function Dropbox#filesListFolder
+ * @arg {FilesListFolderArg} arg - The request parameters.
+ * @returns {Promise.<FilesListFolderResult, Error.<FilesListFolderError>>}
+ */
+routes.filesListFolder = function (arg) {
+  return this.request('files/list_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from list_folder, use this to paginate
+ * through all files and retrieve updates to the folder, following the same
+ * rules as documented for list_folder.
+ * @function Dropbox#filesListFolderContinue
+ * @arg {FilesListFolderContinueArg} arg - The request parameters.
+ * @returns {Promise.<FilesListFolderResult, Error.<FilesListFolderContinueError>>}
+ */
+routes.filesListFolderContinue = function (arg) {
+  return this.request('files/list_folder/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * A way to quickly get a cursor for the folder's state. Unlike list_folder,
+ * list_folder/get_latest_cursor doesn't return any entries. This endpoint is
+ * for app which only needs to know about new files and modifications and
+ * doesn't need to know about files that already exist in Dropbox.
+ * @function Dropbox#filesListFolderGetLatestCursor
+ * @arg {FilesListFolderArg} arg - The request parameters.
+ * @returns {Promise.<FilesListFolderGetLatestCursorResult, Error.<FilesListFolderError>>}
+ */
+routes.filesListFolderGetLatestCursor = function (arg) {
+  return this.request('files/list_folder/get_latest_cursor', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * A longpoll endpoint to wait for changes on an account. In conjunction with
+ * list_folder/continue, this call gives you a low-latency way to monitor an
+ * account for file changes. The connection will block until there are changes
+ * available or a timeout occurs. This endpoint is useful mostly for client-side
+ * apps. If you're looking for server-side notifications, check out our webhooks
+ * documentation https://www.dropbox.com/developers/reference/webhooks.
+ * @function Dropbox#filesListFolderLongpoll
+ * @arg {FilesListFolderLongpollArg} arg - The request parameters.
+ * @returns {Promise.<FilesListFolderLongpollResult, Error.<FilesListFolderLongpollError>>}
+ */
+routes.filesListFolderLongpoll = function (arg) {
+  return this.request('files/list_folder/longpoll', arg, 'noauth', 'notify', 'rpc');
+};
+
+/**
+ * Return revisions of a file.
+ * @function Dropbox#filesListRevisions
+ * @arg {FilesListRevisionsArg} arg - The request parameters.
+ * @returns {Promise.<FilesListRevisionsResult, Error.<FilesListRevisionsError>>}
+ */
+routes.filesListRevisions = function (arg) {
+  return this.request('files/list_revisions', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Move a file or folder to a different location in the user's Dropbox. If the
+ * source path is a folder all its contents will be moved.
+ * @function Dropbox#filesMove
+ * @deprecated
+ * @arg {FilesRelocationArg} arg - The request parameters.
+ * @returns {Promise.<(FilesFileMetadata|FilesFolderMetadata|FilesDeletedMetadata), Error.<FilesRelocationError>>}
+ */
+routes.filesMove = function (arg) {
+  return this.request('files/move', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Move multiple files or folders to different locations at once in the user's
+ * Dropbox. This route is 'all or nothing', which means if one entry fails, the
+ * whole transaction will abort. This route will return job ID immediately and
+ * do the async moving job in background. Please use move_batch/check to check
+ * the job status.
+ * @function Dropbox#filesMoveBatch
+ * @arg {FilesRelocationBatchArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationBatchLaunch, Error.<void>>}
+ */
+routes.filesMoveBatch = function (arg) {
+  return this.request('files/move_batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for move_batch. If success, it
+ * returns list of results for each entry.
+ * @function Dropbox#filesMoveBatchCheck
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationBatchJobStatus, Error.<AsyncPollError>>}
+ */
+routes.filesMoveBatchCheck = function (arg) {
+  return this.request('files/move_batch/check', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Move a file or folder to a different location in the user's Dropbox. If the
+ * source path is a folder all its contents will be moved.
+ * @function Dropbox#filesMoveV2
+ * @arg {FilesRelocationArg} arg - The request parameters.
+ * @returns {Promise.<FilesRelocationResult, Error.<FilesRelocationError>>}
+ */
+routes.filesMoveV2 = function (arg) {
+  return this.request('files/move_v2', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Permanently delete the file or folder at a given path (see
+ * https://www.dropbox.com/en/help/40). Note: This endpoint is only available
+ * for Dropbox Business apps.
+ * @function Dropbox#filesPermanentlyDelete
+ * @arg {FilesDeleteArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesDeleteError>>}
+ */
+routes.filesPermanentlyDelete = function (arg) {
+  return this.request('files/permanently_delete', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Add custom properties to a file using a filled property template. See
+ * properties/template/add to create new property templates.
+ * @function Dropbox#filesPropertiesAdd
+ * @arg {FilesPropertyGroupWithPath} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesAddPropertiesError>>}
+ */
+routes.filesPropertiesAdd = function (arg) {
+  return this.request('files/properties/add', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Overwrite custom properties from a specified template associated with a file.
+ * @function Dropbox#filesPropertiesOverwrite
+ * @arg {FilesPropertyGroupWithPath} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesInvalidPropertyGroupError>>}
+ */
+routes.filesPropertiesOverwrite = function (arg) {
+  return this.request('files/properties/overwrite', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Remove all custom properties from a specified template associated with a
+ * file. To remove specific property key value pairs, see properties/update. To
+ * update a property template, see properties/template/update. Property
+ * templates can't be removed once created.
+ * @function Dropbox#filesPropertiesRemove
+ * @arg {FilesRemovePropertiesArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesRemovePropertiesError>>}
+ */
+routes.filesPropertiesRemove = function (arg) {
+  return this.request('files/properties/remove', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get the schema for a specified template.
+ * @function Dropbox#filesPropertiesTemplateGet
+ * @arg {PropertiesGetPropertyTemplateArg} arg - The request parameters.
+ * @returns {Promise.<PropertiesGetPropertyTemplateResult, Error.<PropertiesPropertyTemplateError>>}
+ */
+routes.filesPropertiesTemplateGet = function (arg) {
+  return this.request('files/properties/template/get', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get the property template identifiers for a user. To get the schema of each
+ * template use properties/template/get.
+ * @function Dropbox#filesPropertiesTemplateList
+ * @arg {void} arg - The request parameters.
+ * @returns {Promise.<PropertiesListPropertyTemplateIds, Error.<PropertiesPropertyTemplateError>>}
+ */
+routes.filesPropertiesTemplateList = function (arg) {
+  return this.request('files/properties/template/list', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Add, update or remove custom properties from a specified template associated
+ * with a file. Fields that already exist and not described in the request will
+ * not be modified.
+ * @function Dropbox#filesPropertiesUpdate
+ * @arg {FilesUpdatePropertyGroupArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesUpdatePropertiesError>>}
+ */
+routes.filesPropertiesUpdate = function (arg) {
+  return this.request('files/properties/update', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Restore a file to a specific revision.
+ * @function Dropbox#filesRestore
+ * @arg {FilesRestoreArg} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesRestoreError>>}
+ */
+routes.filesRestore = function (arg) {
+  return this.request('files/restore', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Save a specified URL into a file in user's Dropbox. If the given path already
+ * exists, the file will be renamed to avoid the conflict (e.g. myfile (1).txt).
+ * @function Dropbox#filesSaveUrl
+ * @arg {FilesSaveUrlArg} arg - The request parameters.
+ * @returns {Promise.<FilesSaveUrlResult, Error.<FilesSaveUrlError>>}
+ */
+routes.filesSaveUrl = function (arg) {
+  return this.request('files/save_url', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Check the status of a save_url job.
+ * @function Dropbox#filesSaveUrlCheckJobStatus
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<FilesSaveUrlJobStatus, Error.<AsyncPollError>>}
+ */
+routes.filesSaveUrlCheckJobStatus = function (arg) {
+  return this.request('files/save_url/check_job_status', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Searches for files and folders. Note: Recent changes may not immediately be
+ * reflected in search results due to a short delay in indexing.
+ * @function Dropbox#filesSearch
+ * @arg {FilesSearchArg} arg - The request parameters.
+ * @returns {Promise.<FilesSearchResult, Error.<FilesSearchError>>}
+ */
+routes.filesSearch = function (arg) {
+  return this.request('files/search', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a new file with the contents provided in the request. Do not use this
+ * to upload a file larger than 150 MB. Instead, create an upload session with
+ * upload_session/start.
+ * @function Dropbox#filesUpload
+ * @arg {FilesCommitInfo} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesUploadError>>}
+ */
+routes.filesUpload = function (arg) {
+  return this.request('files/upload', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * Append more data to an upload session. A single request should not upload
+ * more than 150 MB.
+ * @function Dropbox#filesUploadSessionAppend
+ * @deprecated
+ * @arg {FilesUploadSessionCursor} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesUploadSessionLookupError>>}
+ */
+routes.filesUploadSessionAppend = function (arg) {
+  return this.request('files/upload_session/append', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * Append more data to an upload session. When the parameter close is set, this
+ * call will close the session. A single request should not upload more than 150
+ * MB.
+ * @function Dropbox#filesUploadSessionAppendV2
+ * @arg {FilesUploadSessionAppendArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<FilesUploadSessionLookupError>>}
+ */
+routes.filesUploadSessionAppendV2 = function (arg) {
+  return this.request('files/upload_session/append_v2', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * Finish an upload session and save the uploaded data to the given file path. A
+ * single request should not upload more than 150 MB.
+ * @function Dropbox#filesUploadSessionFinish
+ * @arg {FilesUploadSessionFinishArg} arg - The request parameters.
+ * @returns {Promise.<FilesFileMetadata, Error.<FilesUploadSessionFinishError>>}
+ */
+routes.filesUploadSessionFinish = function (arg) {
+  return this.request('files/upload_session/finish', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * This route helps you commit many files at once into a user's Dropbox. Use
+ * upload_session/start and upload_session/append_v2 to upload file contents. We
+ * recommend uploading many files in parallel to increase throughput. Once the
+ * file contents have been uploaded, rather than calling upload_session/finish,
+ * use this route to finish all your upload sessions in a single request.
+ * UploadSessionStartArg.close or UploadSessionAppendArg.close needs to be true
+ * for the last upload_session/start or upload_session/append_v2 call. This
+ * route will return a job_id immediately and do the async commit job in
+ * background. Use upload_session/finish_batch/check to check the job status.
+ * For the same account, this route should be executed serially. That means you
+ * should not start the next job before current job finishes. We allow up to
+ * 1000 entries in a single request.
+ * @function Dropbox#filesUploadSessionFinishBatch
+ * @arg {FilesUploadSessionFinishBatchArg} arg - The request parameters.
+ * @returns {Promise.<FilesUploadSessionFinishBatchLaunch, Error.<void>>}
+ */
+routes.filesUploadSessionFinishBatch = function (arg) {
+  return this.request('files/upload_session/finish_batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for upload_session/finish_batch. If
+ * success, it returns list of result for each entry.
+ * @function Dropbox#filesUploadSessionFinishBatchCheck
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<FilesUploadSessionFinishBatchJobStatus, Error.<AsyncPollError>>}
+ */
+routes.filesUploadSessionFinishBatchCheck = function (arg) {
+  return this.request('files/upload_session/finish_batch/check', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Upload sessions allow you to upload a single file in one or more requests,
+ * for example where the size of the file is greater than 150 MB.  This call
+ * starts a new upload session with the given data. You can then use
+ * upload_session/append_v2 to add more data and upload_session/finish to save
+ * all the data to a file in Dropbox. A single request should not upload more
+ * than 150 MB. An upload session can be used for a maximum of 48 hours.
+ * Attempting to use an UploadSessionStartResult.session_id with
+ * upload_session/append_v2 or upload_session/finish more than 48 hours after
+ * its creation will return a UploadSessionLookupError.not_found.
+ * @function Dropbox#filesUploadSessionStart
+ * @arg {FilesUploadSessionStartArg} arg - The request parameters.
+ * @returns {Promise.<FilesUploadSessionStartResult, Error.<void>>}
+ */
+routes.filesUploadSessionStart = function (arg) {
+  return this.request('files/upload_session/start', arg, 'user', 'content', 'upload');
+};
+
+/**
+ * Marks the given Paper doc as archived. Note: This action can be performed or
+ * undone by anyone with edit permissions to the doc.
+ * @function Dropbox#paperDocsArchive
+ * @arg {PaperRefPaperDoc} arg - The request parameters.
+ * @returns {Promise.<void, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsArchive = function (arg) {
+  return this.request('paper/docs/archive', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Exports and downloads Paper doc either as HTML or markdown.
+ * @function Dropbox#paperDocsDownload
+ * @arg {PaperPaperDocExport} arg - The request parameters.
+ * @returns {Promise.<PaperPaperDocExportResult, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsDownload = function (arg) {
+  return this.request('paper/docs/download', arg, 'user', 'api', 'download');
+};
+
+/**
+ * Lists the users who are explicitly invited to the Paper folder in which the
+ * Paper doc is contained. For private folders all users (including owner)
+ * shared on the folder are listed and for team folders all non-team users
+ * shared on the folder are returned.
+ * @function Dropbox#paperDocsFolderUsersList
+ * @arg {PaperListUsersOnFolderArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListUsersOnFolderResponse, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsFolderUsersList = function (arg) {
+  return this.request('paper/docs/folder_users/list', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from docs/folder_users/list, use this to
+ * paginate through all users on the Paper folder.
+ * @function Dropbox#paperDocsFolderUsersListContinue
+ * @arg {PaperListUsersOnFolderContinueArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListUsersOnFolderResponse, Error.<PaperListUsersCursorError>>}
+ */
+routes.paperDocsFolderUsersListContinue = function (arg) {
+  return this.request('paper/docs/folder_users/list/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Retrieves folder information for the given Paper doc. This includes:   -
+ * folder sharing policy; permissions for subfolders are set by the top-level
+ * folder.   - full 'filepath', i.e. the list of folders (both folderId and
+ * folderName) from the root folder to the folder directly containing the Paper
+ * doc.  Note: If the Paper doc is not in any folder (aka unfiled) the response
+ * will be empty.
+ * @function Dropbox#paperDocsGetFolderInfo
+ * @arg {PaperRefPaperDoc} arg - The request parameters.
+ * @returns {Promise.<PaperFoldersContainingPaperDoc, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsGetFolderInfo = function (arg) {
+  return this.request('paper/docs/get_folder_info', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Return the list of all Paper docs according to the argument specifications.
+ * To iterate over through the full pagination, pass the cursor to
+ * docs/list/continue.
+ * @function Dropbox#paperDocsList
+ * @arg {PaperListPaperDocsArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListPaperDocsResponse, Error.<void>>}
+ */
+routes.paperDocsList = function (arg) {
+  return this.request('paper/docs/list', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from docs/list, use this to paginate through
+ * all Paper doc.
+ * @function Dropbox#paperDocsListContinue
+ * @arg {PaperListPaperDocsContinueArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListPaperDocsResponse, Error.<PaperListDocsCursorError>>}
+ */
+routes.paperDocsListContinue = function (arg) {
+  return this.request('paper/docs/list/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Permanently deletes the given Paper doc. This operation is final as the doc
+ * cannot be recovered.  Note: This action can be performed only by the doc
+ * owner.
+ * @function Dropbox#paperDocsPermanentlyDelete
+ * @arg {PaperRefPaperDoc} arg - The request parameters.
+ * @returns {Promise.<void, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsPermanentlyDelete = function (arg) {
+  return this.request('paper/docs/permanently_delete', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Gets the default sharing policy for the given Paper doc.
+ * @function Dropbox#paperDocsSharingPolicyGet
+ * @arg {PaperRefPaperDoc} arg - The request parameters.
+ * @returns {Promise.<PaperSharingPolicy, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsSharingPolicyGet = function (arg) {
+  return this.request('paper/docs/sharing_policy/get', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Sets the default sharing policy for the given Paper doc. The default
+ * 'team_sharing_policy' can be changed only by teams, omit this field for
+ * personal accounts.  Note: 'public_sharing_policy' cannot be set to the value
+ * 'disabled' because this setting can be changed only via the team admin
+ * console.
+ * @function Dropbox#paperDocsSharingPolicySet
+ * @arg {PaperPaperDocSharingPolicy} arg - The request parameters.
+ * @returns {Promise.<void, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsSharingPolicySet = function (arg) {
+  return this.request('paper/docs/sharing_policy/set', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows an owner or editor to add users to a Paper doc or change their
+ * permissions using their email address or Dropbox account ID.  Note: The Doc
+ * owner's permissions cannot be changed.
+ * @function Dropbox#paperDocsUsersAdd
+ * @arg {PaperAddPaperDocUser} arg - The request parameters.
+ * @returns {Promise.<Array.<PaperAddPaperDocUserMemberResult>, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsUsersAdd = function (arg) {
+  return this.request('paper/docs/users/add', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Lists all users who visited the Paper doc or users with explicit access. This
+ * call excludes users who have been removed. The list is sorted by the date of
+ * the visit or the share date. The list will include both users, the explicitly
+ * shared ones as well as those who came in using the Paper url link.
+ * @function Dropbox#paperDocsUsersList
+ * @arg {PaperListUsersOnPaperDocArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListUsersOnPaperDocResponse, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsUsersList = function (arg) {
+  return this.request('paper/docs/users/list', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from docs/users/list, use this to paginate
+ * through all users on the Paper doc.
+ * @function Dropbox#paperDocsUsersListContinue
+ * @arg {PaperListUsersOnPaperDocContinueArgs} arg - The request parameters.
+ * @returns {Promise.<PaperListUsersOnPaperDocResponse, Error.<PaperListUsersCursorError>>}
+ */
+routes.paperDocsUsersListContinue = function (arg) {
+  return this.request('paper/docs/users/list/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows an owner or editor to remove users from a Paper doc using their email
+ * address or Dropbox account ID.  Note: Doc owner cannot be removed.
+ * @function Dropbox#paperDocsUsersRemove
+ * @arg {PaperRemovePaperDocUser} arg - The request parameters.
+ * @returns {Promise.<void, Error.<PaperDocLookupError>>}
+ */
+routes.paperDocsUsersRemove = function (arg) {
+  return this.request('paper/docs/users/remove', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Adds specified members to a file.
+ * @function Dropbox#sharingAddFileMember
+ * @arg {SharingAddFileMemberArgs} arg - The request parameters.
+ * @returns {Promise.<Array.<SharingFileMemberActionResult>, Error.<SharingAddFileMemberError>>}
+ */
+routes.sharingAddFileMember = function (arg) {
+  return this.request('sharing/add_file_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows an owner or editor (if the ACL update policy allows) of a shared
+ * folder to add another member. For the new member to get access to all the
+ * functionality for this folder, you will need to call mount_folder on their
+ * behalf. Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingAddFolderMember
+ * @arg {SharingAddFolderMemberArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingAddFolderMemberError>>}
+ */
+routes.sharingAddFolderMember = function (arg) {
+  return this.request('sharing/add_folder_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Identical to update_file_member but with less information returned.
+ * @function Dropbox#sharingChangeFileMemberAccess
+ * @deprecated
+ * @arg {SharingChangeFileMemberAccessArgs} arg - The request parameters.
+ * @returns {Promise.<SharingFileMemberActionResult, Error.<SharingFileMemberActionError>>}
+ */
+routes.sharingChangeFileMemberAccess = function (arg) {
+  return this.request('sharing/change_file_member_access', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job. Apps must have full Dropbox access
+ * to use this endpoint.
+ * @function Dropbox#sharingCheckJobStatus
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<SharingJobStatus, Error.<AsyncPollError>>}
+ */
+routes.sharingCheckJobStatus = function (arg) {
+  return this.request('sharing/check_job_status', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for sharing a folder. Apps must
+ * have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingCheckRemoveMemberJobStatus
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<SharingRemoveMemberJobStatus, Error.<AsyncPollError>>}
+ */
+routes.sharingCheckRemoveMemberJobStatus = function (arg) {
+  return this.request('sharing/check_remove_member_job_status', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns the status of an asynchronous job for sharing a folder. Apps must
+ * have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingCheckShareJobStatus
+ * @arg {AsyncPollArg} arg - The request parameters.
+ * @returns {Promise.<SharingShareFolderJobStatus, Error.<AsyncPollError>>}
+ */
+routes.sharingCheckShareJobStatus = function (arg) {
+  return this.request('sharing/check_share_job_status', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a shared link. If a shared link already exists for the given path,
+ * that link is returned. Note that in the returned PathLinkMetadata, the
+ * PathLinkMetadata.url field is the shortened URL if
+ * CreateSharedLinkArg.short_url argument is set to true. Previously, it was
+ * technically possible to break a shared link by moving or renaming the
+ * corresponding file or folder. In the future, this will no longer be the case,
+ * so your app shouldn't rely on this behavior. Instead, if your app needs to
+ * revoke a shared link, use revoke_shared_link.
+ * @function Dropbox#sharingCreateSharedLink
+ * @deprecated
+ * @arg {SharingCreateSharedLinkArg} arg - The request parameters.
+ * @returns {Promise.<SharingPathLinkMetadata, Error.<SharingCreateSharedLinkError>>}
+ */
+routes.sharingCreateSharedLink = function (arg) {
+  return this.request('sharing/create_shared_link', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Create a shared link with custom settings. If no settings are given then the
+ * default visibility is RequestedVisibility.public (The resolved visibility,
+ * though, may depend on other aspects such as team and shared folder settings).
+ * @function Dropbox#sharingCreateSharedLinkWithSettings
+ * @arg {SharingCreateSharedLinkWithSettingsArg} arg - The request parameters.
+ * @returns {Promise.<(SharingFileLinkMetadata|SharingFolderLinkMetadata|SharingSharedLinkMetadata), Error.<SharingCreateSharedLinkWithSettingsError>>}
+ */
+routes.sharingCreateSharedLinkWithSettings = function (arg) {
+  return this.request('sharing/create_shared_link_with_settings', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns shared file metadata.
+ * @function Dropbox#sharingGetFileMetadata
+ * @arg {SharingGetFileMetadataArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFileMetadata, Error.<SharingGetFileMetadataError>>}
+ */
+routes.sharingGetFileMetadata = function (arg) {
+  return this.request('sharing/get_file_metadata', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns shared file metadata.
+ * @function Dropbox#sharingGetFileMetadataBatch
+ * @arg {SharingGetFileMetadataBatchArg} arg - The request parameters.
+ * @returns {Promise.<Array.<SharingGetFileMetadataBatchResult>, Error.<SharingSharingUserError>>}
+ */
+routes.sharingGetFileMetadataBatch = function (arg) {
+  return this.request('sharing/get_file_metadata/batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns shared folder metadata by its folder ID. Apps must have full Dropbox
+ * access to use this endpoint.
+ * @function Dropbox#sharingGetFolderMetadata
+ * @arg {SharingGetMetadataArgs} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFolderMetadata, Error.<SharingSharedFolderAccessError>>}
+ */
+routes.sharingGetFolderMetadata = function (arg) {
+  return this.request('sharing/get_folder_metadata', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Download the shared link's file from a user's Dropbox.
+ * @function Dropbox#sharingGetSharedLinkFile
+ * @arg {Object} arg - The request parameters.
+ * @returns {Promise.<(SharingFileLinkMetadata|SharingFolderLinkMetadata|SharingSharedLinkMetadata), Error.<SharingGetSharedLinkFileError>>}
+ */
+routes.sharingGetSharedLinkFile = function (arg) {
+  return this.request('sharing/get_shared_link_file', arg, 'user', 'content', 'download');
+};
+
+/**
+ * Get the shared link's metadata.
+ * @function Dropbox#sharingGetSharedLinkMetadata
+ * @arg {SharingGetSharedLinkMetadataArg} arg - The request parameters.
+ * @returns {Promise.<(SharingFileLinkMetadata|SharingFolderLinkMetadata|SharingSharedLinkMetadata), Error.<SharingSharedLinkError>>}
+ */
+routes.sharingGetSharedLinkMetadata = function (arg) {
+  return this.request('sharing/get_shared_link_metadata', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns a list of LinkMetadata objects for this user, including collection
+ * links. If no path is given, returns a list of all shared links for the
+ * current user, including collection links, up to a maximum of 1000 links. If a
+ * non-empty path is given, returns a list of all shared links that allow access
+ * to the given path.  Collection links are never returned in this case. Note
+ * that the url field in the response is never the shortened URL.
+ * @function Dropbox#sharingGetSharedLinks
+ * @deprecated
+ * @arg {SharingGetSharedLinksArg} arg - The request parameters.
+ * @returns {Promise.<SharingGetSharedLinksResult, Error.<SharingGetSharedLinksError>>}
+ */
+routes.sharingGetSharedLinks = function (arg) {
+  return this.request('sharing/get_shared_links', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Use to obtain the members who have been invited to a file, both inherited and
+ * uninherited members.
+ * @function Dropbox#sharingListFileMembers
+ * @arg {SharingListFileMembersArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFileMembers, Error.<SharingListFileMembersError>>}
+ */
+routes.sharingListFileMembers = function (arg) {
+  return this.request('sharing/list_file_members', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get members of multiple files at once. The arguments to this route are more
+ * limited, and the limit on query result size per file is more strict. To
+ * customize the results more, use the individual file endpoint. Inherited users
+ * and groups are not included in the result, and permissions are not returned
+ * for this endpoint.
+ * @function Dropbox#sharingListFileMembersBatch
+ * @arg {SharingListFileMembersBatchArg} arg - The request parameters.
+ * @returns {Promise.<Array.<SharingListFileMembersBatchResult>, Error.<SharingSharingUserError>>}
+ */
+routes.sharingListFileMembersBatch = function (arg) {
+  return this.request('sharing/list_file_members/batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from list_file_members or
+ * list_file_members/batch, use this to paginate through all shared file
+ * members.
+ * @function Dropbox#sharingListFileMembersContinue
+ * @arg {SharingListFileMembersContinueArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFileMembers, Error.<SharingListFileMembersContinueError>>}
+ */
+routes.sharingListFileMembersContinue = function (arg) {
+  return this.request('sharing/list_file_members/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns shared folder membership by its folder ID. Apps must have full
+ * Dropbox access to use this endpoint.
+ * @function Dropbox#sharingListFolderMembers
+ * @arg {SharingListFolderMembersArgs} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFolderMembers, Error.<SharingSharedFolderAccessError>>}
+ */
+routes.sharingListFolderMembers = function (arg) {
+  return this.request('sharing/list_folder_members', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from list_folder_members, use this to
+ * paginate through all shared folder members. Apps must have full Dropbox
+ * access to use this endpoint.
+ * @function Dropbox#sharingListFolderMembersContinue
+ * @arg {SharingListFolderMembersContinueArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFolderMembers, Error.<SharingListFolderMembersContinueError>>}
+ */
+routes.sharingListFolderMembersContinue = function (arg) {
+  return this.request('sharing/list_folder_members/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Return the list of all shared folders the current user has access to. Apps
+ * must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingListFolders
+ * @arg {SharingListFoldersArgs} arg - The request parameters.
+ * @returns {Promise.<SharingListFoldersResult, Error.<void>>}
+ */
+routes.sharingListFolders = function (arg) {
+  return this.request('sharing/list_folders', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from list_folders, use this to paginate
+ * through all shared folders. The cursor must come from a previous call to
+ * list_folders or list_folders/continue. Apps must have full Dropbox access to
+ * use this endpoint.
+ * @function Dropbox#sharingListFoldersContinue
+ * @arg {SharingListFoldersContinueArg} arg - The request parameters.
+ * @returns {Promise.<SharingListFoldersResult, Error.<SharingListFoldersContinueError>>}
+ */
+routes.sharingListFoldersContinue = function (arg) {
+  return this.request('sharing/list_folders/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Return the list of all shared folders the current user can mount or unmount.
+ * Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingListMountableFolders
+ * @arg {SharingListFoldersArgs} arg - The request parameters.
+ * @returns {Promise.<SharingListFoldersResult, Error.<void>>}
+ */
+routes.sharingListMountableFolders = function (arg) {
+  return this.request('sharing/list_mountable_folders', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from list_mountable_folders, use this to
+ * paginate through all mountable shared folders. The cursor must come from a
+ * previous call to list_mountable_folders or list_mountable_folders/continue.
+ * Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingListMountableFoldersContinue
+ * @arg {SharingListFoldersContinueArg} arg - The request parameters.
+ * @returns {Promise.<SharingListFoldersResult, Error.<SharingListFoldersContinueError>>}
+ */
+routes.sharingListMountableFoldersContinue = function (arg) {
+  return this.request('sharing/list_mountable_folders/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Returns a list of all files shared with current user.  Does not include files
+ * the user has received via shared folders, and does  not include unclaimed
+ * invitations.
+ * @function Dropbox#sharingListReceivedFiles
+ * @arg {SharingListFilesArg} arg - The request parameters.
+ * @returns {Promise.<SharingListFilesResult, Error.<SharingSharingUserError>>}
+ */
+routes.sharingListReceivedFiles = function (arg) {
+  return this.request('sharing/list_received_files', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get more results with a cursor from list_received_files.
+ * @function Dropbox#sharingListReceivedFilesContinue
+ * @arg {SharingListFilesContinueArg} arg - The request parameters.
+ * @returns {Promise.<SharingListFilesResult, Error.<SharingListFilesContinueError>>}
+ */
+routes.sharingListReceivedFilesContinue = function (arg) {
+  return this.request('sharing/list_received_files/continue', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * List shared links of this user. If no path is given, returns a list of all
+ * shared links for the current user. If a non-empty path is given, returns a
+ * list of all shared links that allow access to the given path - direct links
+ * to the given path and links to parent folders of the given path. Links to
+ * parent folders can be suppressed by setting direct_only to true.
+ * @function Dropbox#sharingListSharedLinks
+ * @arg {SharingListSharedLinksArg} arg - The request parameters.
+ * @returns {Promise.<SharingListSharedLinksResult, Error.<SharingListSharedLinksError>>}
+ */
+routes.sharingListSharedLinks = function (arg) {
+  return this.request('sharing/list_shared_links', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Modify the shared link's settings. If the requested visibility conflict with
+ * the shared links policy of the team or the shared folder (in case the linked
+ * file is part of a shared folder) then the LinkPermissions.resolved_visibility
+ * of the returned SharedLinkMetadata will reflect the actual visibility of the
+ * shared link and the LinkPermissions.requested_visibility will reflect the
+ * requested visibility.
+ * @function Dropbox#sharingModifySharedLinkSettings
+ * @arg {SharingModifySharedLinkSettingsArgs} arg - The request parameters.
+ * @returns {Promise.<(SharingFileLinkMetadata|SharingFolderLinkMetadata|SharingSharedLinkMetadata), Error.<SharingModifySharedLinkSettingsError>>}
+ */
+routes.sharingModifySharedLinkSettings = function (arg) {
+  return this.request('sharing/modify_shared_link_settings', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * The current user mounts the designated folder. Mount a shared folder for a
+ * user after they have been added as a member. Once mounted, the shared folder
+ * will appear in their Dropbox. Apps must have full Dropbox access to use this
+ * endpoint.
+ * @function Dropbox#sharingMountFolder
+ * @arg {SharingMountFolderArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFolderMetadata, Error.<SharingMountFolderError>>}
+ */
+routes.sharingMountFolder = function (arg) {
+  return this.request('sharing/mount_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * The current user relinquishes their membership in the designated file. Note
+ * that the current user may still have inherited access to this file through
+ * the parent folder. Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingRelinquishFileMembership
+ * @arg {SharingRelinquishFileMembershipArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingRelinquishFileMembershipError>>}
+ */
+routes.sharingRelinquishFileMembership = function (arg) {
+  return this.request('sharing/relinquish_file_membership', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * The current user relinquishes their membership in the designated shared
+ * folder and will no longer have access to the folder.  A folder owner cannot
+ * relinquish membership in their own folder. This will run synchronously if
+ * leave_a_copy is false, and asynchronously if leave_a_copy is true. Apps must
+ * have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingRelinquishFolderMembership
+ * @arg {SharingRelinquishFolderMembershipArg} arg - The request parameters.
+ * @returns {Promise.<AsyncLaunchEmptyResult, Error.<SharingRelinquishFolderMembershipError>>}
+ */
+routes.sharingRelinquishFolderMembership = function (arg) {
+  return this.request('sharing/relinquish_folder_membership', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Identical to remove_file_member_2 but with less information returned.
+ * @function Dropbox#sharingRemoveFileMember
+ * @deprecated
+ * @arg {SharingRemoveFileMemberArg} arg - The request parameters.
+ * @returns {Promise.<SharingFileMemberActionIndividualResult, Error.<SharingRemoveFileMemberError>>}
+ */
+routes.sharingRemoveFileMember = function (arg) {
+  return this.request('sharing/remove_file_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Removes a specified member from the file.
+ * @function Dropbox#sharingRemoveFileMember2
+ * @arg {SharingRemoveFileMemberArg} arg - The request parameters.
+ * @returns {Promise.<SharingFileMemberRemoveActionResult, Error.<SharingRemoveFileMemberError>>}
+ */
+routes.sharingRemoveFileMember2 = function (arg) {
+  return this.request('sharing/remove_file_member_2', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows an owner or editor (if the ACL update policy allows) of a shared
+ * folder to remove another member. Apps must have full Dropbox access to use
+ * this endpoint.
+ * @function Dropbox#sharingRemoveFolderMember
+ * @arg {SharingRemoveFolderMemberArg} arg - The request parameters.
+ * @returns {Promise.<AsyncLaunchResultBase, Error.<SharingRemoveFolderMemberError>>}
+ */
+routes.sharingRemoveFolderMember = function (arg) {
+  return this.request('sharing/remove_folder_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Revoke a shared link. Note that even after revoking a shared link to a file,
+ * the file may be accessible if there are shared links leading to any of the
+ * file parent folders. To list all shared links that enable access to a
+ * specific file, you can use the list_shared_links with the file as the
+ * ListSharedLinksArg.path argument.
+ * @function Dropbox#sharingRevokeSharedLink
+ * @arg {SharingRevokeSharedLinkArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingRevokeSharedLinkError>>}
+ */
+routes.sharingRevokeSharedLink = function (arg) {
+  return this.request('sharing/revoke_shared_link', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Share a folder with collaborators. Most sharing will be completed
+ * synchronously. Large folders will be completed asynchronously. To make
+ * testing the async case repeatable, set `ShareFolderArg.force_async`. If a
+ * ShareFolderLaunch.async_job_id is returned, you'll need to call
+ * check_share_job_status until the action completes to get the metadata for the
+ * folder. Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingShareFolder
+ * @arg {SharingShareFolderArg} arg - The request parameters.
+ * @returns {Promise.<SharingShareFolderLaunch, Error.<SharingShareFolderError>>}
+ */
+routes.sharingShareFolder = function (arg) {
+  return this.request('sharing/share_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Transfer ownership of a shared folder to a member of the shared folder. User
+ * must have AccessLevel.owner access to the shared folder to perform a
+ * transfer. Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingTransferFolder
+ * @arg {SharingTransferFolderArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingTransferFolderError>>}
+ */
+routes.sharingTransferFolder = function (arg) {
+  return this.request('sharing/transfer_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * The current user unmounts the designated folder. They can re-mount the folder
+ * at a later time using mount_folder. Apps must have full Dropbox access to use
+ * this endpoint.
+ * @function Dropbox#sharingUnmountFolder
+ * @arg {SharingUnmountFolderArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingUnmountFolderError>>}
+ */
+routes.sharingUnmountFolder = function (arg) {
+  return this.request('sharing/unmount_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Remove all members from this file. Does not remove inherited members.
+ * @function Dropbox#sharingUnshareFile
+ * @arg {SharingUnshareFileArg} arg - The request parameters.
+ * @returns {Promise.<void, Error.<SharingUnshareFileError>>}
+ */
+routes.sharingUnshareFile = function (arg) {
+  return this.request('sharing/unshare_file', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows a shared folder owner to unshare the folder. You'll need to call
+ * check_job_status to determine if the action has completed successfully. Apps
+ * must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingUnshareFolder
+ * @arg {SharingUnshareFolderArg} arg - The request parameters.
+ * @returns {Promise.<AsyncLaunchEmptyResult, Error.<SharingUnshareFolderError>>}
+ */
+routes.sharingUnshareFolder = function (arg) {
+  return this.request('sharing/unshare_folder', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Changes a member's access on a shared file.
+ * @function Dropbox#sharingUpdateFileMember
+ * @arg {SharingUpdateFileMemberArgs} arg - The request parameters.
+ * @returns {Promise.<SharingMemberAccessLevelResult, Error.<SharingFileMemberActionError>>}
+ */
+routes.sharingUpdateFileMember = function (arg) {
+  return this.request('sharing/update_file_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Allows an owner or editor of a shared folder to update another member's
+ * permissions. Apps must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingUpdateFolderMember
+ * @arg {SharingUpdateFolderMemberArg} arg - The request parameters.
+ * @returns {Promise.<SharingMemberAccessLevelResult, Error.<SharingUpdateFolderMemberError>>}
+ */
+routes.sharingUpdateFolderMember = function (arg) {
+  return this.request('sharing/update_folder_member', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Update the sharing policies for a shared folder. User must have
+ * AccessLevel.owner access to the shared folder to update its policies. Apps
+ * must have full Dropbox access to use this endpoint.
+ * @function Dropbox#sharingUpdateFolderPolicy
+ * @arg {SharingUpdateFolderPolicyArg} arg - The request parameters.
+ * @returns {Promise.<SharingSharedFolderMetadata, Error.<SharingUpdateFolderPolicyError>>}
+ */
+routes.sharingUpdateFolderPolicy = function (arg) {
+  return this.request('sharing/update_folder_policy', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Retrieves team events. Permission : Team Auditing.
+ * @function Dropbox#teamLogGetEvents
+ * @arg {TeamLogGetTeamEventsArg} arg - The request parameters.
+ * @returns {Promise.<TeamLogGetTeamEventsResult, Error.<TeamLogGetTeamEventsError>>}
+ */
+routes.teamLogGetEvents = function (arg) {
+  return this.request('team_log/get_events', arg, 'team', 'api', 'rpc');
+};
+
+/**
+ * Once a cursor has been retrieved from get_events, use this to paginate
+ * through all events. Permission : Team Auditing.
+ * @function Dropbox#teamLogGetEventsContinue
+ * @arg {TeamLogGetTeamEventsContinueArg} arg - The request parameters.
+ * @returns {Promise.<TeamLogGetTeamEventsResult, Error.<TeamLogGetTeamEventsContinueError>>}
+ */
+routes.teamLogGetEventsContinue = function (arg) {
+  return this.request('team_log/get_events/continue', arg, 'team', 'api', 'rpc');
+};
+
+/**
+ * Get information about a user's account.
+ * @function Dropbox#usersGetAccount
+ * @arg {UsersGetAccountArg} arg - The request parameters.
+ * @returns {Promise.<UsersBasicAccount, Error.<UsersGetAccountError>>}
+ */
+routes.usersGetAccount = function (arg) {
+  return this.request('users/get_account', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get information about multiple user accounts.  At most 300 accounts may be
+ * queried per request.
+ * @function Dropbox#usersGetAccountBatch
+ * @arg {UsersGetAccountBatchArg} arg - The request parameters.
+ * @returns {Promise.<Object, Error.<UsersGetAccountBatchError>>}
+ */
+routes.usersGetAccountBatch = function (arg) {
+  return this.request('users/get_account_batch', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get information about the current user's account.
+ * @function Dropbox#usersGetCurrentAccount
+ * @arg {void} arg - The request parameters.
+ * @returns {Promise.<UsersFullAccount, Error.<void>>}
+ */
+routes.usersGetCurrentAccount = function (arg) {
+  return this.request('users/get_current_account', arg, 'user', 'api', 'rpc');
+};
+
+/**
+ * Get the space usage information for the current user's account.
+ * @function Dropbox#usersGetSpaceUsage
+ * @arg {void} arg - The request parameters.
+ * @returns {Promise.<UsersSpaceUsage, Error.<void>>}
+ */
+routes.usersGetSpaceUsage = function (arg) {
+  return this.request('users/get_space_usage', arg, 'user', 'api', 'rpc');
+};
+
+module.exports = routes;
+
+},{}],21:[function(require,module,exports){
+var request = require('superagent');
+var Promise = require('es6-promise').Promise;
+var getBaseURL = require('./get-base-url');
+
+// This doesn't match what was spec'd in paper doc yet
+var buildCustomError = function (error, response) {
+  var err;
+  if (response) {
+    try {
+      err = JSON.parse(response.text);
+    } catch (e) {
+      err = response.text;
+    }
+  }
+  return {
+    status: error.status,
+    error: err || error,
+    response: response
+  };
+};
+
+var rpcRequest = function (path, body, auth, host, accessToken, selectUser) {
+  var promiseFunction = function (resolve, reject) {
+    var apiRequest;
+
+    function success(data) {
+      if (resolve) {
+        resolve(data);
+      }
+    }
+
+    function failure(error) {
+      if (reject) {
+        reject(error);
+      }
+    }
+
+    function responseHandler(error, response) {
+      if (error) {
+        failure(buildCustomError(error, response));
+      } else {
+        success(response.body);
+      }
+    }
+
+    // The API expects null to be passed for endpoints that dont accept any
+    // parameters
+    if (!body) {
+      body = null;
+    }
+
+    apiRequest = request.post(getBaseURL(host) + path)
+      .type('application/json');
+
+    switch (auth) {
+      case 'team':
+      case 'user':
+        apiRequest.set('Authorization', 'Bearer ' + accessToken);
+        break;
+      case 'noauth':
+        break;
+      default:
+        throw new Error('Unhandled auth type: ' + auth);
+    }
+
+    if (selectUser) {
+      apiRequest = apiRequest.set('Dropbox-API-Select-User', selectUser);
+    }
+
+    apiRequest.send(body)
+      .end(responseHandler);
+  };
+
+  return new Promise(promiseFunction);
+};
+
+module.exports = rpcRequest;
+
+},{"./get-base-url":15,"es6-promise":23,"superagent":200}],22:[function(require,module,exports){
+var request = require('superagent');
+var Promise = require('es6-promise').Promise;
+var getBaseURL = require('./get-base-url');
+var httpHeaderSafeJson = require('./http-header-safe-json');
+
+// This doesn't match what was spec'd in paper doc yet
+var buildCustomError = function (error, response) {
+  return {
+    status: error.status,
+    error: (response ? response.text : null) || error.toString(),
+    response: response
+  };
+};
+
+var uploadRequest = function (path, args, auth, host, accessToken, selectUser) {
+  if (auth !== 'user') {
+    throw new Error('Unexpected auth type: ' + auth);
+  }
+
+  var promiseFunction = function (resolve, reject) {
+    var apiRequest;
+
+    // Since args.contents is sent as the body of the request and not added to
+    // the url, it needs to be remove it from args.
+    var contents = args.contents;
+    delete args.contents;
+
+    function success(data) {
+      if (resolve) {
+        resolve(data);
+      }
+    }
+
+    function failure(error) {
+      if (reject) {
+        reject(error);
+      }
+    }
+
+    function responseHandler(error, response) {
+      if (error) {
+        failure(buildCustomError(error, response));
+      } else {
+        success(response.body);
+      }
+    }
+
+    apiRequest = request.post(getBaseURL(host) + path)
+      .type('application/octet-stream')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Dropbox-API-Arg', httpHeaderSafeJson(args));
+
+    if (selectUser) {
+      apiRequest = apiRequest.set('Dropbox-API-Select-User', selectUser);
+    }
+
+    apiRequest
+      .send(contents)
+      .end(responseHandler);
+  };
+
+  return new Promise(promiseFunction);
+};
+
+module.exports = uploadRequest;
+
+},{"./get-base-url":15,"./http-header-safe-json":16,"es6-promise":23,"superagent":200}],23:[function(require,module,exports){
+(function (process,global){
+/*!
+ * @overview es6-promise - a tiny implementation of Promises/A+.
+ * @copyright Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors (Conversion to ES6 API by Jake Archibald)
+ * @license   Licensed under MIT license
+ *            See https://raw.githubusercontent.com/stefanpenner/es6-promise/master/LICENSE
+ * @version   3.3.1
+ */
+
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    (global.ES6Promise = factory());
+}(this, (function () { 'use strict';
+
+function objectOrFunction(x) {
+  return typeof x === 'function' || typeof x === 'object' && x !== null;
+}
+
+function isFunction(x) {
+  return typeof x === 'function';
+}
+
+var _isArray = undefined;
+if (!Array.isArray) {
+  _isArray = function (x) {
+    return Object.prototype.toString.call(x) === '[object Array]';
+  };
+} else {
+  _isArray = Array.isArray;
+}
+
+var isArray = _isArray;
+
+var len = 0;
+var vertxNext = undefined;
+var customSchedulerFn = undefined;
+
+var asap = function asap(callback, arg) {
+  queue[len] = callback;
+  queue[len + 1] = arg;
+  len += 2;
+  if (len === 2) {
+    // If len is 2, that means that we need to schedule an async flush.
+    // If additional callbacks are queued before the queue is flushed, they
+    // will be processed by this flush that we are scheduling.
+    if (customSchedulerFn) {
+      customSchedulerFn(flush);
+    } else {
+      scheduleFlush();
+    }
+  }
+};
+
+function setScheduler(scheduleFn) {
+  customSchedulerFn = scheduleFn;
+}
+
+function setAsap(asapFn) {
+  asap = asapFn;
+}
+
+var browserWindow = typeof window !== 'undefined' ? window : undefined;
+var browserGlobal = browserWindow || {};
+var BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
+var isNode = typeof self === 'undefined' && typeof process !== 'undefined' && ({}).toString.call(process) === '[object process]';
+
+// test for web worker but not in IE10
+var isWorker = typeof Uint8ClampedArray !== 'undefined' && typeof importScripts !== 'undefined' && typeof MessageChannel !== 'undefined';
+
+// node
+function useNextTick() {
+  // node version 0.10.x displays a deprecation warning when nextTick is used recursively
+  // see https://github.com/cujojs/when/issues/410 for details
+  return function () {
+    return process.nextTick(flush);
+  };
+}
+
+// vertx
+function useVertxTimer() {
+  return function () {
+    vertxNext(flush);
+  };
+}
+
+function useMutationObserver() {
+  var iterations = 0;
+  var observer = new BrowserMutationObserver(flush);
+  var node = document.createTextNode('');
+  observer.observe(node, { characterData: true });
+
+  return function () {
+    node.data = iterations = ++iterations % 2;
+  };
+}
+
+// web worker
+function useMessageChannel() {
+  var channel = new MessageChannel();
+  channel.port1.onmessage = flush;
+  return function () {
+    return channel.port2.postMessage(0);
+  };
+}
+
+function useSetTimeout() {
+  // Store setTimeout reference so es6-promise will be unaffected by
+  // other code modifying setTimeout (like sinon.useFakeTimers())
+  var globalSetTimeout = setTimeout;
+  return function () {
+    return globalSetTimeout(flush, 1);
+  };
+}
+
+var queue = new Array(1000);
+function flush() {
+  for (var i = 0; i < len; i += 2) {
+    var callback = queue[i];
+    var arg = queue[i + 1];
+
+    callback(arg);
+
+    queue[i] = undefined;
+    queue[i + 1] = undefined;
+  }
+
+  len = 0;
+}
+
+function attemptVertx() {
+  try {
+    var r = require;
+    var vertx = r('vertx');
+    vertxNext = vertx.runOnLoop || vertx.runOnContext;
+    return useVertxTimer();
+  } catch (e) {
+    return useSetTimeout();
+  }
+}
+
+var scheduleFlush = undefined;
+// Decide what async method to use to triggering processing of queued callbacks:
+if (isNode) {
+  scheduleFlush = useNextTick();
+} else if (BrowserMutationObserver) {
+  scheduleFlush = useMutationObserver();
+} else if (isWorker) {
+  scheduleFlush = useMessageChannel();
+} else if (browserWindow === undefined && typeof require === 'function') {
+  scheduleFlush = attemptVertx();
+} else {
+  scheduleFlush = useSetTimeout();
+}
+
+function then(onFulfillment, onRejection) {
+  var _arguments = arguments;
+
+  var parent = this;
+
+  var child = new this.constructor(noop);
+
+  if (child[PROMISE_ID] === undefined) {
+    makePromise(child);
+  }
+
+  var _state = parent._state;
+
+  if (_state) {
+    (function () {
+      var callback = _arguments[_state - 1];
+      asap(function () {
+        return invokeCallback(_state, child, callback, parent._result);
+      });
+    })();
+  } else {
+    subscribe(parent, child, onFulfillment, onRejection);
+  }
+
+  return child;
+}
+
+/**
+  `Promise.resolve` returns a promise that will become resolved with the
+  passed `value`. It is shorthand for the following:
+
+  ```javascript
+  let promise = new Promise(function(resolve, reject){
+    resolve(1);
+  });
+
+  promise.then(function(value){
+    // value === 1
+  });
+  ```
+
+  Instead of writing the above, your code now simply becomes the following:
+
+  ```javascript
+  let promise = Promise.resolve(1);
+
+  promise.then(function(value){
+    // value === 1
+  });
+  ```
+
+  @method resolve
+  @static
+  @param {Any} value value that the returned promise will be resolved with
+  Useful for tooling.
+  @return {Promise} a promise that will become fulfilled with the given
+  `value`
+*/
+function resolve(object) {
+  /*jshint validthis:true */
+  var Constructor = this;
+
+  if (object && typeof object === 'object' && object.constructor === Constructor) {
+    return object;
+  }
+
+  var promise = new Constructor(noop);
+  _resolve(promise, object);
+  return promise;
+}
+
+var PROMISE_ID = Math.random().toString(36).substring(16);
+
+function noop() {}
+
+var PENDING = void 0;
+var FULFILLED = 1;
+var REJECTED = 2;
+
+var GET_THEN_ERROR = new ErrorObject();
+
+function selfFulfillment() {
+  return new TypeError("You cannot resolve a promise with itself");
+}
+
+function cannotReturnOwn() {
+  return new TypeError('A promises callback cannot return that same promise.');
+}
+
+function getThen(promise) {
+  try {
+    return promise.then;
+  } catch (error) {
+    GET_THEN_ERROR.error = error;
+    return GET_THEN_ERROR;
+  }
+}
+
+function tryThen(then, value, fulfillmentHandler, rejectionHandler) {
+  try {
+    then.call(value, fulfillmentHandler, rejectionHandler);
+  } catch (e) {
+    return e;
+  }
+}
+
+function handleForeignThenable(promise, thenable, then) {
+  asap(function (promise) {
+    var sealed = false;
+    var error = tryThen(then, thenable, function (value) {
+      if (sealed) {
+        return;
+      }
+      sealed = true;
+      if (thenable !== value) {
+        _resolve(promise, value);
+      } else {
+        fulfill(promise, value);
+      }
+    }, function (reason) {
+      if (sealed) {
+        return;
+      }
+      sealed = true;
+
+      _reject(promise, reason);
+    }, 'Settle: ' + (promise._label || ' unknown promise'));
+
+    if (!sealed && error) {
+      sealed = true;
+      _reject(promise, error);
+    }
+  }, promise);
+}
+
+function handleOwnThenable(promise, thenable) {
+  if (thenable._state === FULFILLED) {
+    fulfill(promise, thenable._result);
+  } else if (thenable._state === REJECTED) {
+    _reject(promise, thenable._result);
+  } else {
+    subscribe(thenable, undefined, function (value) {
+      return _resolve(promise, value);
+    }, function (reason) {
+      return _reject(promise, reason);
+    });
+  }
+}
+
+function handleMaybeThenable(promise, maybeThenable, then$$) {
+  if (maybeThenable.constructor === promise.constructor && then$$ === then && maybeThenable.constructor.resolve === resolve) {
+    handleOwnThenable(promise, maybeThenable);
+  } else {
+    if (then$$ === GET_THEN_ERROR) {
+      _reject(promise, GET_THEN_ERROR.error);
+    } else if (then$$ === undefined) {
+      fulfill(promise, maybeThenable);
+    } else if (isFunction(then$$)) {
+      handleForeignThenable(promise, maybeThenable, then$$);
+    } else {
+      fulfill(promise, maybeThenable);
+    }
+  }
+}
+
+function _resolve(promise, value) {
+  if (promise === value) {
+    _reject(promise, selfFulfillment());
+  } else if (objectOrFunction(value)) {
+    handleMaybeThenable(promise, value, getThen(value));
+  } else {
+    fulfill(promise, value);
+  }
+}
+
+function publishRejection(promise) {
+  if (promise._onerror) {
+    promise._onerror(promise._result);
+  }
+
+  publish(promise);
+}
+
+function fulfill(promise, value) {
+  if (promise._state !== PENDING) {
+    return;
+  }
+
+  promise._result = value;
+  promise._state = FULFILLED;
+
+  if (promise._subscribers.length !== 0) {
+    asap(publish, promise);
+  }
+}
+
+function _reject(promise, reason) {
+  if (promise._state !== PENDING) {
+    return;
+  }
+  promise._state = REJECTED;
+  promise._result = reason;
+
+  asap(publishRejection, promise);
+}
+
+function subscribe(parent, child, onFulfillment, onRejection) {
+  var _subscribers = parent._subscribers;
+  var length = _subscribers.length;
+
+  parent._onerror = null;
+
+  _subscribers[length] = child;
+  _subscribers[length + FULFILLED] = onFulfillment;
+  _subscribers[length + REJECTED] = onRejection;
+
+  if (length === 0 && parent._state) {
+    asap(publish, parent);
+  }
+}
+
+function publish(promise) {
+  var subscribers = promise._subscribers;
+  var settled = promise._state;
+
+  if (subscribers.length === 0) {
+    return;
+  }
+
+  var child = undefined,
+      callback = undefined,
+      detail = promise._result;
+
+  for (var i = 0; i < subscribers.length; i += 3) {
+    child = subscribers[i];
+    callback = subscribers[i + settled];
+
+    if (child) {
+      invokeCallback(settled, child, callback, detail);
+    } else {
+      callback(detail);
+    }
+  }
+
+  promise._subscribers.length = 0;
+}
+
+function ErrorObject() {
+  this.error = null;
+}
+
+var TRY_CATCH_ERROR = new ErrorObject();
+
+function tryCatch(callback, detail) {
+  try {
+    return callback(detail);
+  } catch (e) {
+    TRY_CATCH_ERROR.error = e;
+    return TRY_CATCH_ERROR;
+  }
+}
+
+function invokeCallback(settled, promise, callback, detail) {
+  var hasCallback = isFunction(callback),
+      value = undefined,
+      error = undefined,
+      succeeded = undefined,
+      failed = undefined;
+
+  if (hasCallback) {
+    value = tryCatch(callback, detail);
+
+    if (value === TRY_CATCH_ERROR) {
+      failed = true;
+      error = value.error;
+      value = null;
+    } else {
+      succeeded = true;
+    }
+
+    if (promise === value) {
+      _reject(promise, cannotReturnOwn());
+      return;
+    }
+  } else {
+    value = detail;
+    succeeded = true;
+  }
+
+  if (promise._state !== PENDING) {
+    // noop
+  } else if (hasCallback && succeeded) {
+      _resolve(promise, value);
+    } else if (failed) {
+      _reject(promise, error);
+    } else if (settled === FULFILLED) {
+      fulfill(promise, value);
+    } else if (settled === REJECTED) {
+      _reject(promise, value);
+    }
+}
+
+function initializePromise(promise, resolver) {
+  try {
+    resolver(function resolvePromise(value) {
+      _resolve(promise, value);
+    }, function rejectPromise(reason) {
+      _reject(promise, reason);
+    });
+  } catch (e) {
+    _reject(promise, e);
+  }
+}
+
+var id = 0;
+function nextId() {
+  return id++;
+}
+
+function makePromise(promise) {
+  promise[PROMISE_ID] = id++;
+  promise._state = undefined;
+  promise._result = undefined;
+  promise._subscribers = [];
+}
+
+function Enumerator(Constructor, input) {
+  this._instanceConstructor = Constructor;
+  this.promise = new Constructor(noop);
+
+  if (!this.promise[PROMISE_ID]) {
+    makePromise(this.promise);
+  }
+
+  if (isArray(input)) {
+    this._input = input;
+    this.length = input.length;
+    this._remaining = input.length;
+
+    this._result = new Array(this.length);
+
+    if (this.length === 0) {
+      fulfill(this.promise, this._result);
+    } else {
+      this.length = this.length || 0;
+      this._enumerate();
+      if (this._remaining === 0) {
+        fulfill(this.promise, this._result);
+      }
+    }
+  } else {
+    _reject(this.promise, validationError());
+  }
+}
+
+function validationError() {
+  return new Error('Array Methods must be provided an Array');
+};
+
+Enumerator.prototype._enumerate = function () {
+  var length = this.length;
+  var _input = this._input;
+
+  for (var i = 0; this._state === PENDING && i < length; i++) {
+    this._eachEntry(_input[i], i);
+  }
+};
+
+Enumerator.prototype._eachEntry = function (entry, i) {
+  var c = this._instanceConstructor;
+  var resolve$$ = c.resolve;
+
+  if (resolve$$ === resolve) {
+    var _then = getThen(entry);
+
+    if (_then === then && entry._state !== PENDING) {
+      this._settledAt(entry._state, i, entry._result);
+    } else if (typeof _then !== 'function') {
+      this._remaining--;
+      this._result[i] = entry;
+    } else if (c === Promise) {
+      var promise = new c(noop);
+      handleMaybeThenable(promise, entry, _then);
+      this._willSettleAt(promise, i);
+    } else {
+      this._willSettleAt(new c(function (resolve$$) {
+        return resolve$$(entry);
+      }), i);
+    }
+  } else {
+    this._willSettleAt(resolve$$(entry), i);
+  }
+};
+
+Enumerator.prototype._settledAt = function (state, i, value) {
+  var promise = this.promise;
+
+  if (promise._state === PENDING) {
+    this._remaining--;
+
+    if (state === REJECTED) {
+      _reject(promise, value);
+    } else {
+      this._result[i] = value;
+    }
+  }
+
+  if (this._remaining === 0) {
+    fulfill(promise, this._result);
+  }
+};
+
+Enumerator.prototype._willSettleAt = function (promise, i) {
+  var enumerator = this;
+
+  subscribe(promise, undefined, function (value) {
+    return enumerator._settledAt(FULFILLED, i, value);
+  }, function (reason) {
+    return enumerator._settledAt(REJECTED, i, reason);
+  });
+};
+
+/**
+  `Promise.all` accepts an array of promises, and returns a new promise which
+  is fulfilled with an array of fulfillment values for the passed promises, or
+  rejected with the reason of the first passed promise to be rejected. It casts all
+  elements of the passed iterable to promises as it runs this algorithm.
+
+  Example:
+
+  ```javascript
+  let promise1 = resolve(1);
+  let promise2 = resolve(2);
+  let promise3 = resolve(3);
+  let promises = [ promise1, promise2, promise3 ];
+
+  Promise.all(promises).then(function(array){
+    // The array here would be [ 1, 2, 3 ];
+  });
+  ```
+
+  If any of the `promises` given to `all` are rejected, the first promise
+  that is rejected will be given as an argument to the returned promises's
+  rejection handler. For example:
+
+  Example:
+
+  ```javascript
+  let promise1 = resolve(1);
+  let promise2 = reject(new Error("2"));
+  let promise3 = reject(new Error("3"));
+  let promises = [ promise1, promise2, promise3 ];
+
+  Promise.all(promises).then(function(array){
+    // Code here never runs because there are rejected promises!
+  }, function(error) {
+    // error.message === "2"
+  });
+  ```
+
+  @method all
+  @static
+  @param {Array} entries array of promises
+  @param {String} label optional string for labeling the promise.
+  Useful for tooling.
+  @return {Promise} promise that is fulfilled when all `promises` have been
+  fulfilled, or rejected if any of them become rejected.
+  @static
+*/
+function all(entries) {
+  return new Enumerator(this, entries).promise;
+}
+
+/**
+  `Promise.race` returns a new promise which is settled in the same way as the
+  first passed promise to settle.
+
+  Example:
+
+  ```javascript
+  let promise1 = new Promise(function(resolve, reject){
+    setTimeout(function(){
+      resolve('promise 1');
+    }, 200);
+  });
+
+  let promise2 = new Promise(function(resolve, reject){
+    setTimeout(function(){
+      resolve('promise 2');
+    }, 100);
+  });
+
+  Promise.race([promise1, promise2]).then(function(result){
+    // result === 'promise 2' because it was resolved before promise1
+    // was resolved.
+  });
+  ```
+
+  `Promise.race` is deterministic in that only the state of the first
+  settled promise matters. For example, even if other promises given to the
+  `promises` array argument are resolved, but the first settled promise has
+  become rejected before the other promises became fulfilled, the returned
+  promise will become rejected:
+
+  ```javascript
+  let promise1 = new Promise(function(resolve, reject){
+    setTimeout(function(){
+      resolve('promise 1');
+    }, 200);
+  });
+
+  let promise2 = new Promise(function(resolve, reject){
+    setTimeout(function(){
+      reject(new Error('promise 2'));
+    }, 100);
+  });
+
+  Promise.race([promise1, promise2]).then(function(result){
+    // Code here never runs
+  }, function(reason){
+    // reason.message === 'promise 2' because promise 2 became rejected before
+    // promise 1 became fulfilled
+  });
+  ```
+
+  An example real-world use case is implementing timeouts:
+
+  ```javascript
+  Promise.race([ajax('foo.json'), timeout(5000)])
+  ```
+
+  @method race
+  @static
+  @param {Array} promises array of promises to observe
+  Useful for tooling.
+  @return {Promise} a promise which settles in the same way as the first passed
+  promise to settle.
+*/
+function race(entries) {
+  /*jshint validthis:true */
+  var Constructor = this;
+
+  if (!isArray(entries)) {
+    return new Constructor(function (_, reject) {
+      return reject(new TypeError('You must pass an array to race.'));
+    });
+  } else {
+    return new Constructor(function (resolve, reject) {
+      var length = entries.length;
+      for (var i = 0; i < length; i++) {
+        Constructor.resolve(entries[i]).then(resolve, reject);
+      }
+    });
+  }
+}
+
+/**
+  `Promise.reject` returns a promise rejected with the passed `reason`.
+  It is shorthand for the following:
+
+  ```javascript
+  let promise = new Promise(function(resolve, reject){
+    reject(new Error('WHOOPS'));
+  });
+
+  promise.then(function(value){
+    // Code here doesn't run because the promise is rejected!
+  }, function(reason){
+    // reason.message === 'WHOOPS'
+  });
+  ```
+
+  Instead of writing the above, your code now simply becomes the following:
+
+  ```javascript
+  let promise = Promise.reject(new Error('WHOOPS'));
+
+  promise.then(function(value){
+    // Code here doesn't run because the promise is rejected!
+  }, function(reason){
+    // reason.message === 'WHOOPS'
+  });
+  ```
+
+  @method reject
+  @static
+  @param {Any} reason value that the returned promise will be rejected with.
+  Useful for tooling.
+  @return {Promise} a promise rejected with the given `reason`.
+*/
+function reject(reason) {
+  /*jshint validthis:true */
+  var Constructor = this;
+  var promise = new Constructor(noop);
+  _reject(promise, reason);
+  return promise;
+}
+
+function needsResolver() {
+  throw new TypeError('You must pass a resolver function as the first argument to the promise constructor');
+}
+
+function needsNew() {
+  throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");
+}
+
+/**
+  Promise objects represent the eventual result of an asynchronous operation. The
+  primary way of interacting with a promise is through its `then` method, which
+  registers callbacks to receive either a promise's eventual value or the reason
+  why the promise cannot be fulfilled.
+
+  Terminology
+  -----------
+
+  - `promise` is an object or function with a `then` method whose behavior conforms to this specification.
+  - `thenable` is an object or function that defines a `then` method.
+  - `value` is any legal JavaScript value (including undefined, a thenable, or a promise).
+  - `exception` is a value that is thrown using the throw statement.
+  - `reason` is a value that indicates why a promise was rejected.
+  - `settled` the final resting state of a promise, fulfilled or rejected.
+
+  A promise can be in one of three states: pending, fulfilled, or rejected.
+
+  Promises that are fulfilled have a fulfillment value and are in the fulfilled
+  state.  Promises that are rejected have a rejection reason and are in the
+  rejected state.  A fulfillment value is never a thenable.
+
+  Promises can also be said to *resolve* a value.  If this value is also a
+  promise, then the original promise's settled state will match the value's
+  settled state.  So a promise that *resolves* a promise that rejects will
+  itself reject, and a promise that *resolves* a promise that fulfills will
+  itself fulfill.
+
+
+  Basic Usage:
+  ------------
+
+  ```js
+  let promise = new Promise(function(resolve, reject) {
+    // on success
+    resolve(value);
+
+    // on failure
+    reject(reason);
+  });
+
+  promise.then(function(value) {
+    // on fulfillment
+  }, function(reason) {
+    // on rejection
+  });
+  ```
+
+  Advanced Usage:
+  ---------------
+
+  Promises shine when abstracting away asynchronous interactions such as
+  `XMLHttpRequest`s.
+
+  ```js
+  function getJSON(url) {
+    return new Promise(function(resolve, reject){
+      let xhr = new XMLHttpRequest();
+
+      xhr.open('GET', url);
+      xhr.onreadystatechange = handler;
+      xhr.responseType = 'json';
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.send();
+
+      function handler() {
+        if (this.readyState === this.DONE) {
+          if (this.status === 200) {
+            resolve(this.response);
+          } else {
+            reject(new Error('getJSON: `' + url + '` failed with status: [' + this.status + ']'));
+          }
+        }
+      };
+    });
+  }
+
+  getJSON('/posts.json').then(function(json) {
+    // on fulfillment
+  }, function(reason) {
+    // on rejection
+  });
+  ```
+
+  Unlike callbacks, promises are great composable primitives.
+
+  ```js
+  Promise.all([
+    getJSON('/posts'),
+    getJSON('/comments')
+  ]).then(function(values){
+    values[0] // => postsJSON
+    values[1] // => commentsJSON
+
+    return values;
+  });
+  ```
+
+  @class Promise
+  @param {function} resolver
+  Useful for tooling.
+  @constructor
+*/
+function Promise(resolver) {
+  this[PROMISE_ID] = nextId();
+  this._result = this._state = undefined;
+  this._subscribers = [];
+
+  if (noop !== resolver) {
+    typeof resolver !== 'function' && needsResolver();
+    this instanceof Promise ? initializePromise(this, resolver) : needsNew();
+  }
+}
+
+Promise.all = all;
+Promise.race = race;
+Promise.resolve = resolve;
+Promise.reject = reject;
+Promise._setScheduler = setScheduler;
+Promise._setAsap = setAsap;
+Promise._asap = asap;
+
+Promise.prototype = {
+  constructor: Promise,
+
+  /**
+    The primary way of interacting with a promise is through its `then` method,
+    which registers callbacks to receive either a promise's eventual value or the
+    reason why the promise cannot be fulfilled.
+  
+    ```js
+    findUser().then(function(user){
+      // user is available
+    }, function(reason){
+      // user is unavailable, and you are given the reason why
+    });
+    ```
+  
+    Chaining
+    --------
+  
+    The return value of `then` is itself a promise.  This second, 'downstream'
+    promise is resolved with the return value of the first promise's fulfillment
+    or rejection handler, or rejected if the handler throws an exception.
+  
+    ```js
+    findUser().then(function (user) {
+      return user.name;
+    }, function (reason) {
+      return 'default name';
+    }).then(function (userName) {
+      // If `findUser` fulfilled, `userName` will be the user's name, otherwise it
+      // will be `'default name'`
+    });
+  
+    findUser().then(function (user) {
+      throw new Error('Found user, but still unhappy');
+    }, function (reason) {
+      throw new Error('`findUser` rejected and we're unhappy');
+    }).then(function (value) {
+      // never reached
+    }, function (reason) {
+      // if `findUser` fulfilled, `reason` will be 'Found user, but still unhappy'.
+      // If `findUser` rejected, `reason` will be '`findUser` rejected and we're unhappy'.
+    });
+    ```
+    If the downstream promise does not specify a rejection handler, rejection reasons will be propagated further downstream.
+  
+    ```js
+    findUser().then(function (user) {
+      throw new PedagogicalException('Upstream error');
+    }).then(function (value) {
+      // never reached
+    }).then(function (value) {
+      // never reached
+    }, function (reason) {
+      // The `PedgagocialException` is propagated all the way down to here
+    });
+    ```
+  
+    Assimilation
+    ------------
+  
+    Sometimes the value you want to propagate to a downstream promise can only be
+    retrieved asynchronously. This can be achieved by returning a promise in the
+    fulfillment or rejection handler. The downstream promise will then be pending
+    until the returned promise is settled. This is called *assimilation*.
+  
+    ```js
+    findUser().then(function (user) {
+      return findCommentsByAuthor(user);
+    }).then(function (comments) {
+      // The user's comments are now available
+    });
+    ```
+  
+    If the assimliated promise rejects, then the downstream promise will also reject.
+  
+    ```js
+    findUser().then(function (user) {
+      return findCommentsByAuthor(user);
+    }).then(function (comments) {
+      // If `findCommentsByAuthor` fulfills, we'll have the value here
+    }, function (reason) {
+      // If `findCommentsByAuthor` rejects, we'll have the reason here
+    });
+    ```
+  
+    Simple Example
+    --------------
+  
+    Synchronous Example
+  
+    ```javascript
+    let result;
+  
+    try {
+      result = findResult();
+      // success
+    } catch(reason) {
+      // failure
+    }
+    ```
+  
+    Errback Example
+  
+    ```js
+    findResult(function(result, err){
+      if (err) {
+        // failure
+      } else {
+        // success
+      }
+    });
+    ```
+  
+    Promise Example;
+  
+    ```javascript
+    findResult().then(function(result){
+      // success
+    }, function(reason){
+      // failure
+    });
+    ```
+  
+    Advanced Example
+    --------------
+  
+    Synchronous Example
+  
+    ```javascript
+    let author, books;
+  
+    try {
+      author = findAuthor();
+      books  = findBooksByAuthor(author);
+      // success
+    } catch(reason) {
+      // failure
+    }
+    ```
+  
+    Errback Example
+  
+    ```js
+  
+    function foundBooks(books) {
+  
+    }
+  
+    function failure(reason) {
+  
+    }
+  
+    findAuthor(function(author, err){
+      if (err) {
+        failure(err);
+        // failure
+      } else {
+        try {
+          findBoooksByAuthor(author, function(books, err) {
+            if (err) {
+              failure(err);
+            } else {
+              try {
+                foundBooks(books);
+              } catch(reason) {
+                failure(reason);
+              }
+            }
+          });
+        } catch(error) {
+          failure(err);
+        }
+        // success
+      }
+    });
+    ```
+  
+    Promise Example;
+  
+    ```javascript
+    findAuthor().
+      then(findBooksByAuthor).
+      then(function(books){
+        // found books
+    }).catch(function(reason){
+      // something went wrong
+    });
+    ```
+  
+    @method then
+    @param {Function} onFulfilled
+    @param {Function} onRejected
+    Useful for tooling.
+    @return {Promise}
+  */
+  then: then,
+
+  /**
+    `catch` is simply sugar for `then(undefined, onRejection)` which makes it the same
+    as the catch block of a try/catch statement.
+  
+    ```js
+    function findAuthor(){
+      throw new Error('couldn't find that author');
+    }
+  
+    // synchronous
+    try {
+      findAuthor();
+    } catch(reason) {
+      // something went wrong
+    }
+  
+    // async with promises
+    findAuthor().catch(function(reason){
+      // something went wrong
+    });
+    ```
+  
+    @method catch
+    @param {Function} onRejection
+    Useful for tooling.
+    @return {Promise}
+  */
+  'catch': function _catch(onRejection) {
+    return this.then(null, onRejection);
+  }
+};
+
+function polyfill() {
+    var local = undefined;
+
+    if (typeof global !== 'undefined') {
+        local = global;
+    } else if (typeof self !== 'undefined') {
+        local = self;
+    } else {
+        try {
+            local = Function('return this')();
+        } catch (e) {
+            throw new Error('polyfill failed because global object is unavailable in this environment');
+        }
+    }
+
+    var P = local.Promise;
+
+    if (P) {
+        var promiseToString = null;
+        try {
+            promiseToString = Object.prototype.toString.call(P.resolve());
+        } catch (e) {
+            // silently ignored
+        }
+
+        if (promiseToString === '[object Promise]' && !P.cast) {
+            return;
+        }
+    }
+
+    local.Promise = Promise;
+}
+
+polyfill();
+// Strange compat..
+Promise.polyfill = polyfill;
+Promise.Promise = Promise;
+
+return Promise;
+
+})));
+
+}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"_process":1}],24:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -694,7 +3976,7 @@ var EventListener = {
 
 module.exports = EventListener;
 }).call(this,require('_process'))
-},{"./emptyFunction":16,"_process":1}],10:[function(require,module,exports){
+},{"./emptyFunction":31,"_process":1}],25:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -730,7 +4012,7 @@ var ExecutionEnvironment = {
 };
 
 module.exports = ExecutionEnvironment;
-},{}],11:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 
 /**
@@ -762,7 +4044,7 @@ function camelize(string) {
 }
 
 module.exports = camelize;
-},{}],12:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -802,7 +4084,7 @@ function camelizeStyleName(string) {
 }
 
 module.exports = camelizeStyleName;
-},{"./camelize":11}],13:[function(require,module,exports){
+},{"./camelize":26}],28:[function(require,module,exports){
 'use strict';
 
 /**
@@ -842,7 +4124,7 @@ function containsNode(outerNode, innerNode) {
 }
 
 module.exports = containsNode;
-},{"./isTextNode":26}],14:[function(require,module,exports){
+},{"./isTextNode":41}],29:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -971,7 +4253,7 @@ function createArrayFromMixed(obj) {
 
 module.exports = createArrayFromMixed;
 }).call(this,require('_process'))
-},{"./invariant":24,"_process":1}],15:[function(require,module,exports){
+},{"./invariant":39,"_process":1}],30:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1057,7 +4339,7 @@ function createNodesFromMarkup(markup, handleScript) {
 
 module.exports = createNodesFromMarkup;
 }).call(this,require('_process'))
-},{"./ExecutionEnvironment":10,"./createArrayFromMixed":14,"./getMarkupWrap":20,"./invariant":24,"_process":1}],16:[function(require,module,exports){
+},{"./ExecutionEnvironment":25,"./createArrayFromMixed":29,"./getMarkupWrap":35,"./invariant":39,"_process":1}],31:[function(require,module,exports){
 "use strict";
 
 /**
@@ -1096,7 +4378,7 @@ emptyFunction.thatReturnsArgument = function (arg) {
 };
 
 module.exports = emptyFunction;
-},{}],17:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -1118,7 +4400,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = emptyObject;
 }).call(this,require('_process'))
-},{"_process":1}],18:[function(require,module,exports){
+},{"_process":1}],33:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1145,7 +4427,7 @@ function focusNode(node) {
 }
 
 module.exports = focusNode;
-},{}],19:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -1186,7 +4468,7 @@ function getActiveElement(doc) /*?DOMElement*/{
 
 module.exports = getActiveElement;
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],20:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -1283,7 +4565,7 @@ function getMarkupWrap(nodeName) {
 
 module.exports = getMarkupWrap;
 }).call(this,require('_process'))
-},{"./ExecutionEnvironment":10,"./invariant":24,"_process":1}],21:[function(require,module,exports){
+},{"./ExecutionEnvironment":25,"./invariant":39,"_process":1}],36:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1322,7 +4604,7 @@ function getUnboundedScrollPosition(scrollable) {
 }
 
 module.exports = getUnboundedScrollPosition;
-},{}],22:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1355,7 +4637,7 @@ function hyphenate(string) {
 }
 
 module.exports = hyphenate;
-},{}],23:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1394,7 +4676,7 @@ function hyphenateStyleName(string) {
 }
 
 module.exports = hyphenateStyleName;
-},{"./hyphenate":22}],24:[function(require,module,exports){
+},{"./hyphenate":37}],39:[function(require,module,exports){
 (function (process){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
@@ -1452,7 +4734,7 @@ function invariant(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 }).call(this,require('_process'))
-},{"_process":1}],25:[function(require,module,exports){
+},{"_process":1}],40:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1477,7 +4759,7 @@ function isNode(object) {
 }
 
 module.exports = isNode;
-},{}],26:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1502,7 +4784,7 @@ function isTextNode(object) {
 }
 
 module.exports = isTextNode;
-},{"./isNode":25}],27:[function(require,module,exports){
+},{"./isNode":40}],42:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1532,7 +4814,7 @@ function memoizeStringOnly(callback) {
 }
 
 module.exports = memoizeStringOnly;
-},{}],28:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1555,7 +4837,7 @@ if (ExecutionEnvironment.canUseDOM) {
 }
 
 module.exports = performance || {};
-},{"./ExecutionEnvironment":10}],29:[function(require,module,exports){
+},{"./ExecutionEnvironment":25}],44:[function(require,module,exports){
 'use strict';
 
 /**
@@ -1589,7 +4871,7 @@ if (performance.now) {
 }
 
 module.exports = performanceNow;
-},{"./performance":28}],30:[function(require,module,exports){
+},{"./performance":43}],45:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1657,7 +4939,7 @@ function shallowEqual(objA, objB) {
 }
 
 module.exports = shallowEqual;
-},{}],31:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-2015, Facebook, Inc.
@@ -1726,7 +5008,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = warning;
 }).call(this,require('_process'))
-},{"./emptyFunction":16,"_process":1}],32:[function(require,module,exports){
+},{"./emptyFunction":31,"_process":1}],47:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -1818,12 +5100,12 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],33:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./lib/ReactDOM');
 
-},{"./lib/ReactDOM":63}],34:[function(require,module,exports){
+},{"./lib/ReactDOM":78}],49:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1897,7 +5179,7 @@ var ARIADOMPropertyConfig = {
 };
 
 module.exports = ARIADOMPropertyConfig;
-},{}],35:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -1921,7 +5203,7 @@ var AutoFocusUtils = {
 };
 
 module.exports = AutoFocusUtils;
-},{"./ReactDOMComponentTree":66,"fbjs/lib/focusNode":18}],36:[function(require,module,exports){
+},{"./ReactDOMComponentTree":81,"fbjs/lib/focusNode":33}],51:[function(require,module,exports){
 /**
  * Copyright 2013-present Facebook, Inc.
  * All rights reserved.
@@ -2306,7 +5588,7 @@ var BeforeInputEventPlugin = {
 };
 
 module.exports = BeforeInputEventPlugin;
-},{"./EventPropagators":52,"./FallbackCompositionState":53,"./SyntheticCompositionEvent":117,"./SyntheticInputEvent":121,"fbjs/lib/ExecutionEnvironment":10}],37:[function(require,module,exports){
+},{"./EventPropagators":67,"./FallbackCompositionState":68,"./SyntheticCompositionEvent":132,"./SyntheticInputEvent":136,"fbjs/lib/ExecutionEnvironment":25}],52:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2454,7 +5736,7 @@ var CSSProperty = {
 };
 
 module.exports = CSSProperty;
-},{}],38:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -2665,7 +5947,7 @@ var CSSPropertyOperations = {
 
 module.exports = CSSPropertyOperations;
 }).call(this,require('_process'))
-},{"./CSSProperty":37,"./ReactInstrumentation":95,"./dangerousStyleValue":134,"_process":1,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/camelizeStyleName":12,"fbjs/lib/hyphenateStyleName":23,"fbjs/lib/memoizeStringOnly":27,"fbjs/lib/warning":31}],39:[function(require,module,exports){
+},{"./CSSProperty":52,"./ReactInstrumentation":110,"./dangerousStyleValue":149,"_process":1,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/camelizeStyleName":27,"fbjs/lib/hyphenateStyleName":38,"fbjs/lib/memoizeStringOnly":42,"fbjs/lib/warning":46}],54:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -2786,7 +6068,7 @@ var CallbackQueue = function () {
 
 module.exports = PooledClass.addPoolingTo(CallbackQueue);
 }).call(this,require('_process'))
-},{"./PooledClass":57,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],40:[function(require,module,exports){
+},{"./PooledClass":72,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],55:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3107,7 +6389,7 @@ var ChangeEventPlugin = {
 };
 
 module.exports = ChangeEventPlugin;
-},{"./EventPluginHub":49,"./EventPropagators":52,"./ReactDOMComponentTree":66,"./ReactUpdates":110,"./SyntheticEvent":119,"./getEventTarget":142,"./isEventSupported":150,"./isTextInputElement":151,"fbjs/lib/ExecutionEnvironment":10}],41:[function(require,module,exports){
+},{"./EventPluginHub":64,"./EventPropagators":67,"./ReactDOMComponentTree":81,"./ReactUpdates":125,"./SyntheticEvent":134,"./getEventTarget":157,"./isEventSupported":165,"./isTextInputElement":166,"fbjs/lib/ExecutionEnvironment":25}],56:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3334,7 +6616,7 @@ var DOMChildrenOperations = {
 
 module.exports = DOMChildrenOperations;
 }).call(this,require('_process'))
-},{"./DOMLazyTree":42,"./Danger":46,"./ReactDOMComponentTree":66,"./ReactInstrumentation":95,"./createMicrosoftUnsafeLocalFunction":133,"./setInnerHTML":155,"./setTextContent":156,"_process":1}],42:[function(require,module,exports){
+},{"./DOMLazyTree":57,"./Danger":61,"./ReactDOMComponentTree":81,"./ReactInstrumentation":110,"./createMicrosoftUnsafeLocalFunction":148,"./setInnerHTML":170,"./setTextContent":171,"_process":1}],57:[function(require,module,exports){
 /**
  * Copyright 2015-present, Facebook, Inc.
  * All rights reserved.
@@ -3452,7 +6734,7 @@ DOMLazyTree.queueHTML = queueHTML;
 DOMLazyTree.queueText = queueText;
 
 module.exports = DOMLazyTree;
-},{"./DOMNamespaces":43,"./createMicrosoftUnsafeLocalFunction":133,"./setInnerHTML":155,"./setTextContent":156}],43:[function(require,module,exports){
+},{"./DOMNamespaces":58,"./createMicrosoftUnsafeLocalFunction":148,"./setInnerHTML":170,"./setTextContent":171}],58:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3472,7 +6754,7 @@ var DOMNamespaces = {
 };
 
 module.exports = DOMNamespaces;
-},{}],44:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3684,7 +6966,7 @@ var DOMProperty = {
 
 module.exports = DOMProperty;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],45:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],60:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3923,7 +7205,7 @@ var DOMPropertyOperations = {
 
 module.exports = DOMPropertyOperations;
 }).call(this,require('_process'))
-},{"./DOMProperty":44,"./ReactDOMComponentTree":66,"./ReactInstrumentation":95,"./quoteAttributeValueForBrowser":152,"_process":1,"fbjs/lib/warning":31}],46:[function(require,module,exports){
+},{"./DOMProperty":59,"./ReactDOMComponentTree":81,"./ReactInstrumentation":110,"./quoteAttributeValueForBrowser":167,"_process":1,"fbjs/lib/warning":46}],61:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -3973,7 +7255,7 @@ var Danger = {
 
 module.exports = Danger;
 }).call(this,require('_process'))
-},{"./DOMLazyTree":42,"./reactProdInvariant":153,"_process":1,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/createNodesFromMarkup":15,"fbjs/lib/emptyFunction":16,"fbjs/lib/invariant":24}],47:[function(require,module,exports){
+},{"./DOMLazyTree":57,"./reactProdInvariant":168,"_process":1,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/createNodesFromMarkup":30,"fbjs/lib/emptyFunction":31,"fbjs/lib/invariant":39}],62:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -3999,7 +7281,7 @@ module.exports = Danger;
 var DefaultEventPluginOrder = ['ResponderEventPlugin', 'SimpleEventPlugin', 'TapEventPlugin', 'EnterLeaveEventPlugin', 'ChangeEventPlugin', 'SelectEventPlugin', 'BeforeInputEventPlugin'];
 
 module.exports = DefaultEventPluginOrder;
-},{}],48:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -4099,7 +7381,7 @@ var EnterLeaveEventPlugin = {
 };
 
 module.exports = EnterLeaveEventPlugin;
-},{"./EventPropagators":52,"./ReactDOMComponentTree":66,"./SyntheticMouseEvent":123}],49:[function(require,module,exports){
+},{"./EventPropagators":67,"./ReactDOMComponentTree":81,"./SyntheticMouseEvent":138}],64:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -4379,7 +7661,7 @@ var EventPluginHub = {
 
 module.exports = EventPluginHub;
 }).call(this,require('_process'))
-},{"./EventPluginRegistry":50,"./EventPluginUtils":51,"./ReactErrorUtils":86,"./accumulateInto":130,"./forEachAccumulated":138,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],50:[function(require,module,exports){
+},{"./EventPluginRegistry":65,"./EventPluginUtils":66,"./ReactErrorUtils":101,"./accumulateInto":145,"./forEachAccumulated":153,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],65:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -4636,7 +7918,7 @@ var EventPluginRegistry = {
 
 module.exports = EventPluginRegistry;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],51:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],66:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -4864,7 +8146,7 @@ var EventPluginUtils = {
 
 module.exports = EventPluginUtils;
 }).call(this,require('_process'))
-},{"./ReactErrorUtils":86,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31}],52:[function(require,module,exports){
+},{"./ReactErrorUtils":101,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46}],67:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -5000,7 +8282,7 @@ var EventPropagators = {
 
 module.exports = EventPropagators;
 }).call(this,require('_process'))
-},{"./EventPluginHub":49,"./EventPluginUtils":51,"./accumulateInto":130,"./forEachAccumulated":138,"_process":1,"fbjs/lib/warning":31}],53:[function(require,module,exports){
+},{"./EventPluginHub":64,"./EventPluginUtils":66,"./accumulateInto":145,"./forEachAccumulated":153,"_process":1,"fbjs/lib/warning":46}],68:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -5095,7 +8377,7 @@ _assign(FallbackCompositionState.prototype, {
 PooledClass.addPoolingTo(FallbackCompositionState);
 
 module.exports = FallbackCompositionState;
-},{"./PooledClass":57,"./getTextContentAccessor":147,"object-assign":32}],54:[function(require,module,exports){
+},{"./PooledClass":72,"./getTextContentAccessor":162,"object-assign":47}],69:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -5307,7 +8589,7 @@ var HTMLDOMPropertyConfig = {
 };
 
 module.exports = HTMLDOMPropertyConfig;
-},{"./DOMProperty":44}],55:[function(require,module,exports){
+},{"./DOMProperty":59}],70:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -5366,7 +8648,7 @@ var KeyEscapeUtils = {
 };
 
 module.exports = KeyEscapeUtils;
-},{}],56:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -5503,7 +8785,7 @@ var LinkedValueUtils = {
 
 module.exports = LinkedValueUtils;
 }).call(this,require('_process'))
-},{"./ReactPropTypesSecret":103,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/React":162}],57:[function(require,module,exports){
+},{"./ReactPropTypesSecret":118,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/React":177}],72:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -5629,7 +8911,7 @@ var PooledClass = {
 
 module.exports = PooledClass;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],58:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],73:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -5957,7 +9239,7 @@ var ReactBrowserEventEmitter = _assign({}, ReactEventEmitterMixin, {
 });
 
 module.exports = ReactBrowserEventEmitter;
-},{"./EventPluginRegistry":50,"./ReactEventEmitterMixin":87,"./ViewportMetrics":129,"./getVendorPrefixedEventName":148,"./isEventSupported":150,"object-assign":32}],59:[function(require,module,exports){
+},{"./EventPluginRegistry":65,"./ReactEventEmitterMixin":102,"./ViewportMetrics":144,"./getVendorPrefixedEventName":163,"./isEventSupported":165,"object-assign":47}],74:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -6113,7 +9395,7 @@ var ReactChildReconciler = {
 
 module.exports = ReactChildReconciler;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":55,"./ReactReconciler":105,"./instantiateReactComponent":149,"./shouldUpdateReactComponent":157,"./traverseAllChildren":158,"_process":1,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],60:[function(require,module,exports){
+},{"./KeyEscapeUtils":70,"./ReactReconciler":120,"./instantiateReactComponent":164,"./shouldUpdateReactComponent":172,"./traverseAllChildren":173,"_process":1,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],75:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -6143,7 +9425,7 @@ var ReactComponentBrowserEnvironment = {
 };
 
 module.exports = ReactComponentBrowserEnvironment;
-},{"./DOMChildrenOperations":41,"./ReactDOMIDOperations":70}],61:[function(require,module,exports){
+},{"./DOMChildrenOperations":56,"./ReactDOMIDOperations":85}],76:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -6191,7 +9473,7 @@ var ReactComponentEnvironment = {
 
 module.exports = ReactComponentEnvironment;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],62:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],77:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -7095,7 +10377,7 @@ var ReactCompositeComponent = {
 
 module.exports = ReactCompositeComponent;
 }).call(this,require('_process'))
-},{"./ReactComponentEnvironment":61,"./ReactErrorUtils":86,"./ReactInstanceMap":94,"./ReactInstrumentation":95,"./ReactNodeTypes":100,"./ReactReconciler":105,"./checkReactTypeSpec":132,"./reactProdInvariant":153,"./shouldUpdateReactComponent":157,"_process":1,"fbjs/lib/emptyObject":17,"fbjs/lib/invariant":24,"fbjs/lib/shallowEqual":30,"fbjs/lib/warning":31,"object-assign":32,"react/lib/React":162,"react/lib/ReactCurrentOwner":167}],63:[function(require,module,exports){
+},{"./ReactComponentEnvironment":76,"./ReactErrorUtils":101,"./ReactInstanceMap":109,"./ReactInstrumentation":110,"./ReactNodeTypes":115,"./ReactReconciler":120,"./checkReactTypeSpec":147,"./reactProdInvariant":168,"./shouldUpdateReactComponent":172,"_process":1,"fbjs/lib/emptyObject":32,"fbjs/lib/invariant":39,"fbjs/lib/shallowEqual":45,"fbjs/lib/warning":46,"object-assign":47,"react/lib/React":177,"react/lib/ReactCurrentOwner":182}],78:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -7208,7 +10490,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactDOM;
 }).call(this,require('_process'))
-},{"./ReactDOMComponentTree":66,"./ReactDOMInvalidARIAHook":72,"./ReactDOMNullInputValuePropHook":73,"./ReactDOMUnknownPropertyHook":80,"./ReactDefaultInjection":83,"./ReactInstrumentation":95,"./ReactMount":98,"./ReactReconciler":105,"./ReactUpdates":110,"./ReactVersion":111,"./findDOMNode":136,"./getHostComponentFromComposite":143,"./renderSubtreeIntoContainer":154,"_process":1,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/warning":31}],64:[function(require,module,exports){
+},{"./ReactDOMComponentTree":81,"./ReactDOMInvalidARIAHook":87,"./ReactDOMNullInputValuePropHook":88,"./ReactDOMUnknownPropertyHook":95,"./ReactDefaultInjection":98,"./ReactInstrumentation":110,"./ReactMount":113,"./ReactReconciler":120,"./ReactUpdates":125,"./ReactVersion":126,"./findDOMNode":151,"./getHostComponentFromComposite":158,"./renderSubtreeIntoContainer":169,"_process":1,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/warning":46}],79:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8205,7 +11487,7 @@ _assign(ReactDOMComponent.prototype, ReactDOMComponent.Mixin, ReactMultiChild.Mi
 
 module.exports = ReactDOMComponent;
 }).call(this,require('_process'))
-},{"./AutoFocusUtils":35,"./CSSPropertyOperations":38,"./DOMLazyTree":42,"./DOMNamespaces":43,"./DOMProperty":44,"./DOMPropertyOperations":45,"./EventPluginHub":49,"./EventPluginRegistry":50,"./ReactBrowserEventEmitter":58,"./ReactDOMComponentFlags":65,"./ReactDOMComponentTree":66,"./ReactDOMInput":71,"./ReactDOMOption":74,"./ReactDOMSelect":75,"./ReactDOMTextarea":78,"./ReactInstrumentation":95,"./ReactMultiChild":99,"./ReactServerRenderingTransaction":107,"./escapeTextContentForBrowser":135,"./isEventSupported":150,"./reactProdInvariant":153,"./validateDOMNesting":159,"_process":1,"fbjs/lib/emptyFunction":16,"fbjs/lib/invariant":24,"fbjs/lib/shallowEqual":30,"fbjs/lib/warning":31,"object-assign":32}],65:[function(require,module,exports){
+},{"./AutoFocusUtils":50,"./CSSPropertyOperations":53,"./DOMLazyTree":57,"./DOMNamespaces":58,"./DOMProperty":59,"./DOMPropertyOperations":60,"./EventPluginHub":64,"./EventPluginRegistry":65,"./ReactBrowserEventEmitter":73,"./ReactDOMComponentFlags":80,"./ReactDOMComponentTree":81,"./ReactDOMInput":86,"./ReactDOMOption":89,"./ReactDOMSelect":90,"./ReactDOMTextarea":93,"./ReactInstrumentation":110,"./ReactMultiChild":114,"./ReactServerRenderingTransaction":122,"./escapeTextContentForBrowser":150,"./isEventSupported":165,"./reactProdInvariant":168,"./validateDOMNesting":174,"_process":1,"fbjs/lib/emptyFunction":31,"fbjs/lib/invariant":39,"fbjs/lib/shallowEqual":45,"fbjs/lib/warning":46,"object-assign":47}],80:[function(require,module,exports){
 /**
  * Copyright 2015-present, Facebook, Inc.
  * All rights reserved.
@@ -8223,7 +11505,7 @@ var ReactDOMComponentFlags = {
 };
 
 module.exports = ReactDOMComponentFlags;
-},{}],66:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8413,7 +11695,7 @@ var ReactDOMComponentTree = {
 
 module.exports = ReactDOMComponentTree;
 }).call(this,require('_process'))
-},{"./DOMProperty":44,"./ReactDOMComponentFlags":65,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],67:[function(require,module,exports){
+},{"./DOMProperty":59,"./ReactDOMComponentFlags":80,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],82:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8448,7 +11730,7 @@ function ReactDOMContainerInfo(topLevelWrapper, node) {
 
 module.exports = ReactDOMContainerInfo;
 }).call(this,require('_process'))
-},{"./validateDOMNesting":159,"_process":1}],68:[function(require,module,exports){
+},{"./validateDOMNesting":174,"_process":1}],83:[function(require,module,exports){
 /**
  * Copyright 2014-present, Facebook, Inc.
  * All rights reserved.
@@ -8508,7 +11790,7 @@ _assign(ReactDOMEmptyComponent.prototype, {
 });
 
 module.exports = ReactDOMEmptyComponent;
-},{"./DOMLazyTree":42,"./ReactDOMComponentTree":66,"object-assign":32}],69:[function(require,module,exports){
+},{"./DOMLazyTree":57,"./ReactDOMComponentTree":81,"object-assign":47}],84:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -8527,7 +11809,7 @@ var ReactDOMFeatureFlags = {
 };
 
 module.exports = ReactDOMFeatureFlags;
-},{}],70:[function(require,module,exports){
+},{}],85:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -8561,7 +11843,7 @@ var ReactDOMIDOperations = {
 };
 
 module.exports = ReactDOMIDOperations;
-},{"./DOMChildrenOperations":41,"./ReactDOMComponentTree":66}],71:[function(require,module,exports){
+},{"./DOMChildrenOperations":56,"./ReactDOMComponentTree":81}],86:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8831,7 +12113,7 @@ function _handleChange(event) {
 
 module.exports = ReactDOMInput;
 }).call(this,require('_process'))
-},{"./DOMPropertyOperations":45,"./LinkedValueUtils":56,"./ReactDOMComponentTree":66,"./ReactUpdates":110,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"object-assign":32}],72:[function(require,module,exports){
+},{"./DOMPropertyOperations":60,"./LinkedValueUtils":71,"./ReactDOMComponentTree":81,"./ReactUpdates":125,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"object-assign":47}],87:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8926,7 +12208,7 @@ var ReactDOMInvalidARIAHook = {
 
 module.exports = ReactDOMInvalidARIAHook;
 }).call(this,require('_process'))
-},{"./DOMProperty":44,"_process":1,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],73:[function(require,module,exports){
+},{"./DOMProperty":59,"_process":1,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],88:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -8971,7 +12253,7 @@ var ReactDOMNullInputValuePropHook = {
 
 module.exports = ReactDOMNullInputValuePropHook;
 }).call(this,require('_process'))
-},{"_process":1,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],74:[function(require,module,exports){
+},{"_process":1,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],89:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -9096,7 +12378,7 @@ var ReactDOMOption = {
 
 module.exports = ReactDOMOption;
 }).call(this,require('_process'))
-},{"./ReactDOMComponentTree":66,"./ReactDOMSelect":75,"_process":1,"fbjs/lib/warning":31,"object-assign":32,"react/lib/React":162}],75:[function(require,module,exports){
+},{"./ReactDOMComponentTree":81,"./ReactDOMSelect":90,"_process":1,"fbjs/lib/warning":46,"object-assign":47,"react/lib/React":177}],90:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -9298,7 +12580,7 @@ function _handleChange(event) {
 
 module.exports = ReactDOMSelect;
 }).call(this,require('_process'))
-},{"./LinkedValueUtils":56,"./ReactDOMComponentTree":66,"./ReactUpdates":110,"_process":1,"fbjs/lib/warning":31,"object-assign":32}],76:[function(require,module,exports){
+},{"./LinkedValueUtils":71,"./ReactDOMComponentTree":81,"./ReactUpdates":125,"_process":1,"fbjs/lib/warning":46,"object-assign":47}],91:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -9510,7 +12792,7 @@ var ReactDOMSelection = {
 };
 
 module.exports = ReactDOMSelection;
-},{"./getNodeForCharacterOffset":146,"./getTextContentAccessor":147,"fbjs/lib/ExecutionEnvironment":10}],77:[function(require,module,exports){
+},{"./getNodeForCharacterOffset":161,"./getTextContentAccessor":162,"fbjs/lib/ExecutionEnvironment":25}],92:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -9676,7 +12958,7 @@ _assign(ReactDOMTextComponent.prototype, {
 
 module.exports = ReactDOMTextComponent;
 }).call(this,require('_process'))
-},{"./DOMChildrenOperations":41,"./DOMLazyTree":42,"./ReactDOMComponentTree":66,"./escapeTextContentForBrowser":135,"./reactProdInvariant":153,"./validateDOMNesting":159,"_process":1,"fbjs/lib/invariant":24,"object-assign":32}],78:[function(require,module,exports){
+},{"./DOMChildrenOperations":56,"./DOMLazyTree":57,"./ReactDOMComponentTree":81,"./escapeTextContentForBrowser":150,"./reactProdInvariant":168,"./validateDOMNesting":174,"_process":1,"fbjs/lib/invariant":39,"object-assign":47}],93:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -9832,7 +13114,7 @@ function _handleChange(event) {
 
 module.exports = ReactDOMTextarea;
 }).call(this,require('_process'))
-},{"./LinkedValueUtils":56,"./ReactDOMComponentTree":66,"./ReactUpdates":110,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"object-assign":32}],79:[function(require,module,exports){
+},{"./LinkedValueUtils":71,"./ReactDOMComponentTree":81,"./ReactUpdates":125,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"object-assign":47}],94:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -9970,7 +13252,7 @@ module.exports = {
   traverseEnterLeave: traverseEnterLeave
 };
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],80:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],95:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -10084,7 +13366,7 @@ var ReactDOMUnknownPropertyHook = {
 
 module.exports = ReactDOMUnknownPropertyHook;
 }).call(this,require('_process'))
-},{"./DOMProperty":44,"./EventPluginRegistry":50,"_process":1,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],81:[function(require,module,exports){
+},{"./DOMProperty":59,"./EventPluginRegistry":65,"_process":1,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],96:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -10447,7 +13729,7 @@ if (/[?&]react_perf\b/.test(url)) {
 
 module.exports = ReactDebugTool;
 }).call(this,require('_process'))
-},{"./ReactHostOperationHistoryHook":91,"./ReactInvalidSetStateWarningHook":96,"_process":1,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/performanceNow":29,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],82:[function(require,module,exports){
+},{"./ReactHostOperationHistoryHook":106,"./ReactInvalidSetStateWarningHook":111,"_process":1,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/performanceNow":44,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],97:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -10515,7 +13797,7 @@ var ReactDefaultBatchingStrategy = {
 };
 
 module.exports = ReactDefaultBatchingStrategy;
-},{"./ReactUpdates":110,"./Transaction":128,"fbjs/lib/emptyFunction":16,"object-assign":32}],83:[function(require,module,exports){
+},{"./ReactUpdates":125,"./Transaction":143,"fbjs/lib/emptyFunction":31,"object-assign":47}],98:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -10601,7 +13883,7 @@ function inject() {
 module.exports = {
   inject: inject
 };
-},{"./ARIADOMPropertyConfig":34,"./BeforeInputEventPlugin":36,"./ChangeEventPlugin":40,"./DefaultEventPluginOrder":47,"./EnterLeaveEventPlugin":48,"./HTMLDOMPropertyConfig":54,"./ReactComponentBrowserEnvironment":60,"./ReactDOMComponent":64,"./ReactDOMComponentTree":66,"./ReactDOMEmptyComponent":68,"./ReactDOMTextComponent":77,"./ReactDOMTreeTraversal":79,"./ReactDefaultBatchingStrategy":82,"./ReactEventListener":88,"./ReactInjection":92,"./ReactReconcileTransaction":104,"./SVGDOMPropertyConfig":112,"./SelectEventPlugin":113,"./SimpleEventPlugin":114}],84:[function(require,module,exports){
+},{"./ARIADOMPropertyConfig":49,"./BeforeInputEventPlugin":51,"./ChangeEventPlugin":55,"./DefaultEventPluginOrder":62,"./EnterLeaveEventPlugin":63,"./HTMLDOMPropertyConfig":69,"./ReactComponentBrowserEnvironment":75,"./ReactDOMComponent":79,"./ReactDOMComponentTree":81,"./ReactDOMEmptyComponent":83,"./ReactDOMTextComponent":92,"./ReactDOMTreeTraversal":94,"./ReactDefaultBatchingStrategy":97,"./ReactEventListener":103,"./ReactInjection":107,"./ReactReconcileTransaction":119,"./SVGDOMPropertyConfig":127,"./SelectEventPlugin":128,"./SimpleEventPlugin":129}],99:[function(require,module,exports){
 /**
  * Copyright 2014-present, Facebook, Inc.
  * All rights reserved.
@@ -10621,7 +13903,7 @@ module.exports = {
 var REACT_ELEMENT_TYPE = typeof Symbol === 'function' && Symbol['for'] && Symbol['for']('react.element') || 0xeac7;
 
 module.exports = REACT_ELEMENT_TYPE;
-},{}],85:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 /**
  * Copyright 2014-present, Facebook, Inc.
  * All rights reserved.
@@ -10651,7 +13933,7 @@ var ReactEmptyComponent = {
 ReactEmptyComponent.injection = ReactEmptyComponentInjection;
 
 module.exports = ReactEmptyComponent;
-},{}],86:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -10730,7 +14012,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactErrorUtils;
 }).call(this,require('_process'))
-},{"_process":1}],87:[function(require,module,exports){
+},{"_process":1}],102:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -10763,7 +14045,7 @@ var ReactEventEmitterMixin = {
 };
 
 module.exports = ReactEventEmitterMixin;
-},{"./EventPluginHub":49}],88:[function(require,module,exports){
+},{"./EventPluginHub":64}],103:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -10918,7 +14200,7 @@ var ReactEventListener = {
 };
 
 module.exports = ReactEventListener;
-},{"./PooledClass":57,"./ReactDOMComponentTree":66,"./ReactUpdates":110,"./getEventTarget":142,"fbjs/lib/EventListener":9,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/getUnboundedScrollPosition":21,"object-assign":32}],89:[function(require,module,exports){
+},{"./PooledClass":72,"./ReactDOMComponentTree":81,"./ReactUpdates":125,"./getEventTarget":157,"fbjs/lib/EventListener":24,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/getUnboundedScrollPosition":36,"object-assign":47}],104:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -10940,7 +14222,7 @@ var ReactFeatureFlags = {
 };
 
 module.exports = ReactFeatureFlags;
-},{}],90:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -11018,7 +14300,7 @@ var ReactHostComponent = {
 
 module.exports = ReactHostComponent;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"object-assign":32}],91:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"object-assign":47}],106:[function(require,module,exports){
 /**
  * Copyright 2016-present, Facebook, Inc.
  * All rights reserved.
@@ -11052,7 +14334,7 @@ var ReactHostOperationHistoryHook = {
 };
 
 module.exports = ReactHostOperationHistoryHook;
-},{}],92:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -11086,7 +14368,7 @@ var ReactInjection = {
 };
 
 module.exports = ReactInjection;
-},{"./DOMProperty":44,"./EventPluginHub":49,"./EventPluginUtils":51,"./ReactBrowserEventEmitter":58,"./ReactComponentEnvironment":61,"./ReactEmptyComponent":85,"./ReactHostComponent":90,"./ReactUpdates":110}],93:[function(require,module,exports){
+},{"./DOMProperty":59,"./EventPluginHub":64,"./EventPluginUtils":66,"./ReactBrowserEventEmitter":73,"./ReactComponentEnvironment":76,"./ReactEmptyComponent":100,"./ReactHostComponent":105,"./ReactUpdates":125}],108:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -11210,7 +14492,7 @@ var ReactInputSelection = {
 };
 
 module.exports = ReactInputSelection;
-},{"./ReactDOMSelection":76,"fbjs/lib/containsNode":13,"fbjs/lib/focusNode":18,"fbjs/lib/getActiveElement":19}],94:[function(require,module,exports){
+},{"./ReactDOMSelection":91,"fbjs/lib/containsNode":28,"fbjs/lib/focusNode":33,"fbjs/lib/getActiveElement":34}],109:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -11258,7 +14540,7 @@ var ReactInstanceMap = {
 };
 
 module.exports = ReactInstanceMap;
-},{}],95:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -11284,7 +14566,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = { debugTool: debugTool };
 }).call(this,require('_process'))
-},{"./ReactDebugTool":81,"_process":1}],96:[function(require,module,exports){
+},{"./ReactDebugTool":96,"_process":1}],111:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -11323,7 +14605,7 @@ var ReactInvalidSetStateWarningHook = {
 
 module.exports = ReactInvalidSetStateWarningHook;
 }).call(this,require('_process'))
-},{"_process":1,"fbjs/lib/warning":31}],97:[function(require,module,exports){
+},{"_process":1,"fbjs/lib/warning":46}],112:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -11373,7 +14655,7 @@ var ReactMarkupChecksum = {
 };
 
 module.exports = ReactMarkupChecksum;
-},{"./adler32":131}],98:[function(require,module,exports){
+},{"./adler32":146}],113:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -11913,7 +15195,7 @@ var ReactMount = {
 
 module.exports = ReactMount;
 }).call(this,require('_process'))
-},{"./DOMLazyTree":42,"./DOMProperty":44,"./ReactBrowserEventEmitter":58,"./ReactDOMComponentTree":66,"./ReactDOMContainerInfo":67,"./ReactDOMFeatureFlags":69,"./ReactFeatureFlags":89,"./ReactInstanceMap":94,"./ReactInstrumentation":95,"./ReactMarkupChecksum":97,"./ReactReconciler":105,"./ReactUpdateQueue":109,"./ReactUpdates":110,"./instantiateReactComponent":149,"./reactProdInvariant":153,"./setInnerHTML":155,"./shouldUpdateReactComponent":157,"_process":1,"fbjs/lib/emptyObject":17,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/React":162,"react/lib/ReactCurrentOwner":167}],99:[function(require,module,exports){
+},{"./DOMLazyTree":57,"./DOMProperty":59,"./ReactBrowserEventEmitter":73,"./ReactDOMComponentTree":81,"./ReactDOMContainerInfo":82,"./ReactDOMFeatureFlags":84,"./ReactFeatureFlags":104,"./ReactInstanceMap":109,"./ReactInstrumentation":110,"./ReactMarkupChecksum":112,"./ReactReconciler":120,"./ReactUpdateQueue":124,"./ReactUpdates":125,"./instantiateReactComponent":164,"./reactProdInvariant":168,"./setInnerHTML":170,"./shouldUpdateReactComponent":172,"_process":1,"fbjs/lib/emptyObject":32,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/React":177,"react/lib/ReactCurrentOwner":182}],114:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12365,7 +15647,7 @@ var ReactMultiChild = {
 
 module.exports = ReactMultiChild;
 }).call(this,require('_process'))
-},{"./ReactChildReconciler":59,"./ReactComponentEnvironment":61,"./ReactInstanceMap":94,"./ReactInstrumentation":95,"./ReactReconciler":105,"./flattenChildren":137,"./reactProdInvariant":153,"_process":1,"fbjs/lib/emptyFunction":16,"fbjs/lib/invariant":24,"react/lib/ReactCurrentOwner":167}],100:[function(require,module,exports){
+},{"./ReactChildReconciler":74,"./ReactComponentEnvironment":76,"./ReactInstanceMap":109,"./ReactInstrumentation":110,"./ReactReconciler":120,"./flattenChildren":152,"./reactProdInvariant":168,"_process":1,"fbjs/lib/emptyFunction":31,"fbjs/lib/invariant":39,"react/lib/ReactCurrentOwner":182}],115:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12407,7 +15689,7 @@ var ReactNodeTypes = {
 
 module.exports = ReactNodeTypes;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"react/lib/React":162}],101:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"react/lib/React":177}],116:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12503,7 +15785,7 @@ var ReactOwner = {
 
 module.exports = ReactOwner;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],102:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],117:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12530,7 +15812,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactPropTypeLocationNames;
 }).call(this,require('_process'))
-},{"_process":1}],103:[function(require,module,exports){
+},{"_process":1}],118:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -12547,7 +15829,7 @@ module.exports = ReactPropTypeLocationNames;
 var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
-},{}],104:[function(require,module,exports){
+},{}],119:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12727,7 +16009,7 @@ PooledClass.addPoolingTo(ReactReconcileTransaction);
 
 module.exports = ReactReconcileTransaction;
 }).call(this,require('_process'))
-},{"./CallbackQueue":39,"./PooledClass":57,"./ReactBrowserEventEmitter":58,"./ReactInputSelection":93,"./ReactInstrumentation":95,"./ReactUpdateQueue":109,"./Transaction":128,"_process":1,"object-assign":32}],105:[function(require,module,exports){
+},{"./CallbackQueue":54,"./PooledClass":72,"./ReactBrowserEventEmitter":73,"./ReactInputSelection":108,"./ReactInstrumentation":110,"./ReactUpdateQueue":124,"./Transaction":143,"_process":1,"object-assign":47}],120:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -12897,7 +16179,7 @@ var ReactReconciler = {
 
 module.exports = ReactReconciler;
 }).call(this,require('_process'))
-},{"./ReactInstrumentation":95,"./ReactRef":106,"_process":1,"fbjs/lib/warning":31}],106:[function(require,module,exports){
+},{"./ReactInstrumentation":110,"./ReactRef":121,"_process":1,"fbjs/lib/warning":46}],121:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -12986,7 +16268,7 @@ ReactRef.detachRefs = function (instance, element) {
 };
 
 module.exports = ReactRef;
-},{"./ReactOwner":101}],107:[function(require,module,exports){
+},{"./ReactOwner":116}],122:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -13078,7 +16360,7 @@ PooledClass.addPoolingTo(ReactServerRenderingTransaction);
 
 module.exports = ReactServerRenderingTransaction;
 }).call(this,require('_process'))
-},{"./PooledClass":57,"./ReactInstrumentation":95,"./ReactServerUpdateQueue":108,"./Transaction":128,"_process":1,"object-assign":32}],108:[function(require,module,exports){
+},{"./PooledClass":72,"./ReactInstrumentation":110,"./ReactServerUpdateQueue":123,"./Transaction":143,"_process":1,"object-assign":47}],123:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -13219,7 +16501,7 @@ var ReactServerUpdateQueue = function () {
 
 module.exports = ReactServerUpdateQueue;
 }).call(this,require('_process'))
-},{"./ReactUpdateQueue":109,"_process":1,"fbjs/lib/warning":31}],109:[function(require,module,exports){
+},{"./ReactUpdateQueue":124,"_process":1,"fbjs/lib/warning":46}],124:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -13447,7 +16729,7 @@ var ReactUpdateQueue = {
 
 module.exports = ReactUpdateQueue;
 }).call(this,require('_process'))
-},{"./ReactInstanceMap":94,"./ReactInstrumentation":95,"./ReactUpdates":110,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/ReactCurrentOwner":167}],110:[function(require,module,exports){
+},{"./ReactInstanceMap":109,"./ReactInstrumentation":110,"./ReactUpdates":125,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/ReactCurrentOwner":182}],125:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -13700,7 +16982,7 @@ var ReactUpdates = {
 
 module.exports = ReactUpdates;
 }).call(this,require('_process'))
-},{"./CallbackQueue":39,"./PooledClass":57,"./ReactFeatureFlags":89,"./ReactReconciler":105,"./Transaction":128,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"object-assign":32}],111:[function(require,module,exports){
+},{"./CallbackQueue":54,"./PooledClass":72,"./ReactFeatureFlags":104,"./ReactReconciler":120,"./Transaction":143,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"object-assign":47}],126:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -13714,7 +16996,7 @@ module.exports = ReactUpdates;
 'use strict';
 
 module.exports = '15.4.1';
-},{}],112:[function(require,module,exports){
+},{}],127:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14016,7 +17298,7 @@ Object.keys(ATTRS).forEach(function (key) {
 });
 
 module.exports = SVGDOMPropertyConfig;
-},{}],113:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14207,7 +17489,7 @@ var SelectEventPlugin = {
 };
 
 module.exports = SelectEventPlugin;
-},{"./EventPropagators":52,"./ReactDOMComponentTree":66,"./ReactInputSelection":93,"./SyntheticEvent":119,"./isTextInputElement":151,"fbjs/lib/ExecutionEnvironment":10,"fbjs/lib/getActiveElement":19,"fbjs/lib/shallowEqual":30}],114:[function(require,module,exports){
+},{"./EventPropagators":67,"./ReactDOMComponentTree":81,"./ReactInputSelection":108,"./SyntheticEvent":134,"./isTextInputElement":166,"fbjs/lib/ExecutionEnvironment":25,"fbjs/lib/getActiveElement":34,"fbjs/lib/shallowEqual":45}],129:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -14437,7 +17719,7 @@ var SimpleEventPlugin = {
 
 module.exports = SimpleEventPlugin;
 }).call(this,require('_process'))
-},{"./EventPropagators":52,"./ReactDOMComponentTree":66,"./SyntheticAnimationEvent":115,"./SyntheticClipboardEvent":116,"./SyntheticDragEvent":118,"./SyntheticEvent":119,"./SyntheticFocusEvent":120,"./SyntheticKeyboardEvent":122,"./SyntheticMouseEvent":123,"./SyntheticTouchEvent":124,"./SyntheticTransitionEvent":125,"./SyntheticUIEvent":126,"./SyntheticWheelEvent":127,"./getEventCharCode":139,"./reactProdInvariant":153,"_process":1,"fbjs/lib/EventListener":9,"fbjs/lib/emptyFunction":16,"fbjs/lib/invariant":24}],115:[function(require,module,exports){
+},{"./EventPropagators":67,"./ReactDOMComponentTree":81,"./SyntheticAnimationEvent":130,"./SyntheticClipboardEvent":131,"./SyntheticDragEvent":133,"./SyntheticEvent":134,"./SyntheticFocusEvent":135,"./SyntheticKeyboardEvent":137,"./SyntheticMouseEvent":138,"./SyntheticTouchEvent":139,"./SyntheticTransitionEvent":140,"./SyntheticUIEvent":141,"./SyntheticWheelEvent":142,"./getEventCharCode":154,"./reactProdInvariant":168,"_process":1,"fbjs/lib/EventListener":24,"fbjs/lib/emptyFunction":31,"fbjs/lib/invariant":39}],130:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14476,7 +17758,7 @@ function SyntheticAnimationEvent(dispatchConfig, dispatchMarker, nativeEvent, na
 SyntheticEvent.augmentClass(SyntheticAnimationEvent, AnimationEventInterface);
 
 module.exports = SyntheticAnimationEvent;
-},{"./SyntheticEvent":119}],116:[function(require,module,exports){
+},{"./SyntheticEvent":134}],131:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14514,7 +17796,7 @@ function SyntheticClipboardEvent(dispatchConfig, dispatchMarker, nativeEvent, na
 SyntheticEvent.augmentClass(SyntheticClipboardEvent, ClipboardEventInterface);
 
 module.exports = SyntheticClipboardEvent;
-},{"./SyntheticEvent":119}],117:[function(require,module,exports){
+},{"./SyntheticEvent":134}],132:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14550,7 +17832,7 @@ function SyntheticCompositionEvent(dispatchConfig, dispatchMarker, nativeEvent, 
 SyntheticEvent.augmentClass(SyntheticCompositionEvent, CompositionEventInterface);
 
 module.exports = SyntheticCompositionEvent;
-},{"./SyntheticEvent":119}],118:[function(require,module,exports){
+},{"./SyntheticEvent":134}],133:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14586,7 +17868,7 @@ function SyntheticDragEvent(dispatchConfig, dispatchMarker, nativeEvent, nativeE
 SyntheticMouseEvent.augmentClass(SyntheticDragEvent, DragEventInterface);
 
 module.exports = SyntheticDragEvent;
-},{"./SyntheticMouseEvent":123}],119:[function(require,module,exports){
+},{"./SyntheticMouseEvent":138}],134:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -14856,7 +18138,7 @@ function getPooledWarningPropertyDefinition(propName, getVal) {
   }
 }
 }).call(this,require('_process'))
-},{"./PooledClass":57,"_process":1,"fbjs/lib/emptyFunction":16,"fbjs/lib/warning":31,"object-assign":32}],120:[function(require,module,exports){
+},{"./PooledClass":72,"_process":1,"fbjs/lib/emptyFunction":31,"fbjs/lib/warning":46,"object-assign":47}],135:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14892,7 +18174,7 @@ function SyntheticFocusEvent(dispatchConfig, dispatchMarker, nativeEvent, native
 SyntheticUIEvent.augmentClass(SyntheticFocusEvent, FocusEventInterface);
 
 module.exports = SyntheticFocusEvent;
-},{"./SyntheticUIEvent":126}],121:[function(require,module,exports){
+},{"./SyntheticUIEvent":141}],136:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -14929,7 +18211,7 @@ function SyntheticInputEvent(dispatchConfig, dispatchMarker, nativeEvent, native
 SyntheticEvent.augmentClass(SyntheticInputEvent, InputEventInterface);
 
 module.exports = SyntheticInputEvent;
-},{"./SyntheticEvent":119}],122:[function(require,module,exports){
+},{"./SyntheticEvent":134}],137:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15013,7 +18295,7 @@ function SyntheticKeyboardEvent(dispatchConfig, dispatchMarker, nativeEvent, nat
 SyntheticUIEvent.augmentClass(SyntheticKeyboardEvent, KeyboardEventInterface);
 
 module.exports = SyntheticKeyboardEvent;
-},{"./SyntheticUIEvent":126,"./getEventCharCode":139,"./getEventKey":140,"./getEventModifierState":141}],123:[function(require,module,exports){
+},{"./SyntheticUIEvent":141,"./getEventCharCode":154,"./getEventKey":155,"./getEventModifierState":156}],138:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15085,7 +18367,7 @@ function SyntheticMouseEvent(dispatchConfig, dispatchMarker, nativeEvent, native
 SyntheticUIEvent.augmentClass(SyntheticMouseEvent, MouseEventInterface);
 
 module.exports = SyntheticMouseEvent;
-},{"./SyntheticUIEvent":126,"./ViewportMetrics":129,"./getEventModifierState":141}],124:[function(require,module,exports){
+},{"./SyntheticUIEvent":141,"./ViewportMetrics":144,"./getEventModifierState":156}],139:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15130,7 +18412,7 @@ function SyntheticTouchEvent(dispatchConfig, dispatchMarker, nativeEvent, native
 SyntheticUIEvent.augmentClass(SyntheticTouchEvent, TouchEventInterface);
 
 module.exports = SyntheticTouchEvent;
-},{"./SyntheticUIEvent":126,"./getEventModifierState":141}],125:[function(require,module,exports){
+},{"./SyntheticUIEvent":141,"./getEventModifierState":156}],140:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15169,7 +18451,7 @@ function SyntheticTransitionEvent(dispatchConfig, dispatchMarker, nativeEvent, n
 SyntheticEvent.augmentClass(SyntheticTransitionEvent, TransitionEventInterface);
 
 module.exports = SyntheticTransitionEvent;
-},{"./SyntheticEvent":119}],126:[function(require,module,exports){
+},{"./SyntheticEvent":134}],141:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15228,7 +18510,7 @@ function SyntheticUIEvent(dispatchConfig, dispatchMarker, nativeEvent, nativeEve
 SyntheticEvent.augmentClass(SyntheticUIEvent, UIEventInterface);
 
 module.exports = SyntheticUIEvent;
-},{"./SyntheticEvent":119,"./getEventTarget":142}],127:[function(require,module,exports){
+},{"./SyntheticEvent":134,"./getEventTarget":157}],142:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15282,7 +18564,7 @@ function SyntheticWheelEvent(dispatchConfig, dispatchMarker, nativeEvent, native
 SyntheticMouseEvent.augmentClass(SyntheticWheelEvent, WheelEventInterface);
 
 module.exports = SyntheticWheelEvent;
-},{"./SyntheticMouseEvent":123}],128:[function(require,module,exports){
+},{"./SyntheticMouseEvent":138}],143:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -15509,7 +18791,7 @@ var TransactionImpl = {
 
 module.exports = TransactionImpl;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],129:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],144:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15536,7 +18818,7 @@ var ViewportMetrics = {
 };
 
 module.exports = ViewportMetrics;
-},{}],130:[function(require,module,exports){
+},{}],145:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -15596,7 +18878,7 @@ function accumulateInto(current, next) {
 
 module.exports = accumulateInto;
 }).call(this,require('_process'))
-},{"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24}],131:[function(require,module,exports){
+},{"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39}],146:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15640,7 +18922,7 @@ function adler32(data) {
 }
 
 module.exports = adler32;
-},{}],132:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -15729,7 +19011,7 @@ function checkReactTypeSpec(typeSpecs, values, location, componentName, element,
 
 module.exports = checkReactTypeSpec;
 }).call(this,require('_process'))
-},{"./ReactPropTypeLocationNames":102,"./ReactPropTypesSecret":103,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],133:[function(require,module,exports){
+},{"./ReactPropTypeLocationNames":117,"./ReactPropTypesSecret":118,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],148:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -15761,7 +19043,7 @@ var createMicrosoftUnsafeLocalFunction = function (func) {
 };
 
 module.exports = createMicrosoftUnsafeLocalFunction;
-},{}],134:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -15842,7 +19124,7 @@ function dangerousStyleValue(name, value, component) {
 
 module.exports = dangerousStyleValue;
 }).call(this,require('_process'))
-},{"./CSSProperty":37,"_process":1,"fbjs/lib/warning":31}],135:[function(require,module,exports){
+},{"./CSSProperty":52,"_process":1,"fbjs/lib/warning":46}],150:[function(require,module,exports){
 /**
  * Copyright 2016-present, Facebook, Inc.
  * All rights reserved.
@@ -15965,7 +19247,7 @@ function escapeTextContentForBrowser(text) {
 }
 
 module.exports = escapeTextContentForBrowser;
-},{}],136:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -16027,7 +19309,7 @@ function findDOMNode(componentOrElement) {
 
 module.exports = findDOMNode;
 }).call(this,require('_process'))
-},{"./ReactDOMComponentTree":66,"./ReactInstanceMap":94,"./getHostComponentFromComposite":143,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/ReactCurrentOwner":167}],137:[function(require,module,exports){
+},{"./ReactDOMComponentTree":81,"./ReactInstanceMap":109,"./getHostComponentFromComposite":158,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/ReactCurrentOwner":182}],152:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -16105,7 +19387,7 @@ function flattenChildren(children, selfDebugID) {
 
 module.exports = flattenChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":55,"./traverseAllChildren":158,"_process":1,"fbjs/lib/warning":31,"react/lib/ReactComponentTreeHook":166}],138:[function(require,module,exports){
+},{"./KeyEscapeUtils":70,"./traverseAllChildren":173,"_process":1,"fbjs/lib/warning":46,"react/lib/ReactComponentTreeHook":181}],153:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16136,7 +19418,7 @@ function forEachAccumulated(arr, cb, scope) {
 }
 
 module.exports = forEachAccumulated;
-},{}],139:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16186,7 +19468,7 @@ function getEventCharCode(nativeEvent) {
 }
 
 module.exports = getEventCharCode;
-},{}],140:[function(require,module,exports){
+},{}],155:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16288,7 +19570,7 @@ function getEventKey(nativeEvent) {
 }
 
 module.exports = getEventKey;
-},{"./getEventCharCode":139}],141:[function(require,module,exports){
+},{"./getEventCharCode":154}],156:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16331,7 +19613,7 @@ function getEventModifierState(nativeEvent) {
 }
 
 module.exports = getEventModifierState;
-},{}],142:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16366,7 +19648,7 @@ function getEventTarget(nativeEvent) {
 }
 
 module.exports = getEventTarget;
-},{}],143:[function(require,module,exports){
+},{}],158:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16396,7 +19678,7 @@ function getHostComponentFromComposite(inst) {
 }
 
 module.exports = getHostComponentFromComposite;
-},{"./ReactNodeTypes":100}],144:[function(require,module,exports){
+},{"./ReactNodeTypes":115}],159:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16437,7 +19719,7 @@ function getIteratorFn(maybeIterable) {
 }
 
 module.exports = getIteratorFn;
-},{}],145:[function(require,module,exports){
+},{}],160:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16458,7 +19740,7 @@ function getNextDebugID() {
 }
 
 module.exports = getNextDebugID;
-},{}],146:[function(require,module,exports){
+},{}],161:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16532,7 +19814,7 @@ function getNodeForCharacterOffset(root, offset) {
 }
 
 module.exports = getNodeForCharacterOffset;
-},{}],147:[function(require,module,exports){
+},{}],162:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16565,7 +19847,7 @@ function getTextContentAccessor() {
 }
 
 module.exports = getTextContentAccessor;
-},{"fbjs/lib/ExecutionEnvironment":10}],148:[function(require,module,exports){
+},{"fbjs/lib/ExecutionEnvironment":25}],163:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16666,7 +19948,7 @@ function getVendorPrefixedEventName(eventName) {
 }
 
 module.exports = getVendorPrefixedEventName;
-},{"fbjs/lib/ExecutionEnvironment":10}],149:[function(require,module,exports){
+},{"fbjs/lib/ExecutionEnvironment":25}],164:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -16786,7 +20068,7 @@ function instantiateReactComponent(node, shouldHaveDebugID) {
 
 module.exports = instantiateReactComponent;
 }).call(this,require('_process'))
-},{"./ReactCompositeComponent":62,"./ReactEmptyComponent":85,"./ReactHostComponent":90,"./getNextDebugID":145,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"object-assign":32}],150:[function(require,module,exports){
+},{"./ReactCompositeComponent":77,"./ReactEmptyComponent":100,"./ReactHostComponent":105,"./getNextDebugID":160,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"object-assign":47}],165:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16846,7 +20128,7 @@ function isEventSupported(eventNameSuffix, capture) {
 }
 
 module.exports = isEventSupported;
-},{"fbjs/lib/ExecutionEnvironment":10}],151:[function(require,module,exports){
+},{"fbjs/lib/ExecutionEnvironment":25}],166:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16897,7 +20179,7 @@ function isTextInputElement(elem) {
 }
 
 module.exports = isTextInputElement;
-},{}],152:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16923,7 +20205,7 @@ function quoteAttributeValueForBrowser(value) {
 }
 
 module.exports = quoteAttributeValueForBrowser;
-},{"./escapeTextContentForBrowser":135}],153:[function(require,module,exports){
+},{"./escapeTextContentForBrowser":150}],168:[function(require,module,exports){
 /**
  * Copyright (c) 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16962,7 +20244,7 @@ function reactProdInvariant(code) {
 }
 
 module.exports = reactProdInvariant;
-},{}],154:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -16978,7 +20260,7 @@ module.exports = reactProdInvariant;
 var ReactMount = require('./ReactMount');
 
 module.exports = ReactMount.renderSubtreeIntoContainer;
-},{"./ReactMount":98}],155:[function(require,module,exports){
+},{"./ReactMount":113}],170:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -17076,7 +20358,7 @@ if (ExecutionEnvironment.canUseDOM) {
 }
 
 module.exports = setInnerHTML;
-},{"./DOMNamespaces":43,"./createMicrosoftUnsafeLocalFunction":133,"fbjs/lib/ExecutionEnvironment":10}],156:[function(require,module,exports){
+},{"./DOMNamespaces":58,"./createMicrosoftUnsafeLocalFunction":148,"fbjs/lib/ExecutionEnvironment":25}],171:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -17128,7 +20410,7 @@ if (ExecutionEnvironment.canUseDOM) {
 }
 
 module.exports = setTextContent;
-},{"./escapeTextContentForBrowser":135,"./setInnerHTML":155,"fbjs/lib/ExecutionEnvironment":10}],157:[function(require,module,exports){
+},{"./escapeTextContentForBrowser":150,"./setInnerHTML":170,"fbjs/lib/ExecutionEnvironment":25}],172:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -17170,7 +20452,7 @@ function shouldUpdateReactComponent(prevElement, nextElement) {
 }
 
 module.exports = shouldUpdateReactComponent;
-},{}],158:[function(require,module,exports){
+},{}],173:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -17348,7 +20630,7 @@ function traverseAllChildren(children, callback, traverseContext) {
 
 module.exports = traverseAllChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":55,"./ReactElementSymbol":84,"./getIteratorFn":144,"./reactProdInvariant":153,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"react/lib/ReactCurrentOwner":167}],159:[function(require,module,exports){
+},{"./KeyEscapeUtils":70,"./ReactElementSymbol":99,"./getIteratorFn":159,"./reactProdInvariant":168,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"react/lib/ReactCurrentOwner":182}],174:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -17732,11 +21014,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = validateDOMNesting;
 }).call(this,require('_process'))
-},{"_process":1,"fbjs/lib/emptyFunction":16,"fbjs/lib/warning":31,"object-assign":32}],160:[function(require,module,exports){
-arguments[4][55][0].apply(exports,arguments)
-},{"dup":55}],161:[function(require,module,exports){
-arguments[4][57][0].apply(exports,arguments)
-},{"./reactProdInvariant":182,"_process":1,"dup":57,"fbjs/lib/invariant":24}],162:[function(require,module,exports){
+},{"_process":1,"fbjs/lib/emptyFunction":31,"fbjs/lib/warning":46,"object-assign":47}],175:[function(require,module,exports){
+arguments[4][70][0].apply(exports,arguments)
+},{"dup":70}],176:[function(require,module,exports){
+arguments[4][72][0].apply(exports,arguments)
+},{"./reactProdInvariant":197,"_process":1,"dup":72,"fbjs/lib/invariant":39}],177:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -17827,7 +21109,7 @@ var React = {
 
 module.exports = React;
 }).call(this,require('_process'))
-},{"./ReactChildren":163,"./ReactClass":164,"./ReactComponent":165,"./ReactDOMFactories":168,"./ReactElement":169,"./ReactElementValidator":171,"./ReactPropTypes":174,"./ReactPureComponent":176,"./ReactVersion":177,"./onlyChild":181,"_process":1,"fbjs/lib/warning":31,"object-assign":32}],163:[function(require,module,exports){
+},{"./ReactChildren":178,"./ReactClass":179,"./ReactComponent":180,"./ReactDOMFactories":183,"./ReactElement":184,"./ReactElementValidator":186,"./ReactPropTypes":189,"./ReactPureComponent":191,"./ReactVersion":192,"./onlyChild":196,"_process":1,"fbjs/lib/warning":46,"object-assign":47}],178:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -18018,7 +21300,7 @@ var ReactChildren = {
 };
 
 module.exports = ReactChildren;
-},{"./PooledClass":161,"./ReactElement":169,"./traverseAllChildren":183,"fbjs/lib/emptyFunction":16}],164:[function(require,module,exports){
+},{"./PooledClass":176,"./ReactElement":184,"./traverseAllChildren":198,"fbjs/lib/emptyFunction":31}],179:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -18737,7 +22019,7 @@ var ReactClass = {
 
 module.exports = ReactClass;
 }).call(this,require('_process'))
-},{"./ReactComponent":165,"./ReactElement":169,"./ReactNoopUpdateQueue":172,"./ReactPropTypeLocationNames":173,"./reactProdInvariant":182,"_process":1,"fbjs/lib/emptyObject":17,"fbjs/lib/invariant":24,"fbjs/lib/warning":31,"object-assign":32}],165:[function(require,module,exports){
+},{"./ReactComponent":180,"./ReactElement":184,"./ReactNoopUpdateQueue":187,"./ReactPropTypeLocationNames":188,"./reactProdInvariant":197,"_process":1,"fbjs/lib/emptyObject":32,"fbjs/lib/invariant":39,"fbjs/lib/warning":46,"object-assign":47}],180:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -18857,7 +22139,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = ReactComponent;
 }).call(this,require('_process'))
-},{"./ReactNoopUpdateQueue":172,"./canDefineProperty":178,"./reactProdInvariant":182,"_process":1,"fbjs/lib/emptyObject":17,"fbjs/lib/invariant":24,"fbjs/lib/warning":31}],166:[function(require,module,exports){
+},{"./ReactNoopUpdateQueue":187,"./canDefineProperty":193,"./reactProdInvariant":197,"_process":1,"fbjs/lib/emptyObject":32,"fbjs/lib/invariant":39,"fbjs/lib/warning":46}],181:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2016-present, Facebook, Inc.
@@ -19193,7 +22475,7 @@ var ReactComponentTreeHook = {
 
 module.exports = ReactComponentTreeHook;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":167,"./reactProdInvariant":182,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31}],167:[function(require,module,exports){
+},{"./ReactCurrentOwner":182,"./reactProdInvariant":197,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46}],182:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -19224,7 +22506,7 @@ var ReactCurrentOwner = {
 };
 
 module.exports = ReactCurrentOwner;
-},{}],168:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -19396,7 +22678,7 @@ var ReactDOMFactories = {
 
 module.exports = ReactDOMFactories;
 }).call(this,require('_process'))
-},{"./ReactElement":169,"./ReactElementValidator":171,"_process":1}],169:[function(require,module,exports){
+},{"./ReactElement":184,"./ReactElementValidator":186,"_process":1}],184:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -19739,9 +23021,9 @@ ReactElement.isValidElement = function (object) {
 
 module.exports = ReactElement;
 }).call(this,require('_process'))
-},{"./ReactCurrentOwner":167,"./ReactElementSymbol":170,"./canDefineProperty":178,"_process":1,"fbjs/lib/warning":31,"object-assign":32}],170:[function(require,module,exports){
-arguments[4][84][0].apply(exports,arguments)
-},{"dup":84}],171:[function(require,module,exports){
+},{"./ReactCurrentOwner":182,"./ReactElementSymbol":185,"./canDefineProperty":193,"_process":1,"fbjs/lib/warning":46,"object-assign":47}],185:[function(require,module,exports){
+arguments[4][99][0].apply(exports,arguments)
+},{"dup":99}],186:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2014-present, Facebook, Inc.
@@ -19970,7 +23252,7 @@ var ReactElementValidator = {
 
 module.exports = ReactElementValidator;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":166,"./ReactCurrentOwner":167,"./ReactElement":169,"./canDefineProperty":178,"./checkReactTypeSpec":179,"./getIteratorFn":180,"_process":1,"fbjs/lib/warning":31}],172:[function(require,module,exports){
+},{"./ReactComponentTreeHook":181,"./ReactCurrentOwner":182,"./ReactElement":184,"./canDefineProperty":193,"./checkReactTypeSpec":194,"./getIteratorFn":195,"_process":1,"fbjs/lib/warning":46}],187:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2015-present, Facebook, Inc.
@@ -20068,9 +23350,9 @@ var ReactNoopUpdateQueue = {
 
 module.exports = ReactNoopUpdateQueue;
 }).call(this,require('_process'))
-},{"_process":1,"fbjs/lib/warning":31}],173:[function(require,module,exports){
-arguments[4][102][0].apply(exports,arguments)
-},{"_process":1,"dup":102}],174:[function(require,module,exports){
+},{"_process":1,"fbjs/lib/warning":46}],188:[function(require,module,exports){
+arguments[4][117][0].apply(exports,arguments)
+},{"_process":1,"dup":117}],189:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20506,9 +23788,9 @@ function getClassName(propValue) {
 
 module.exports = ReactPropTypes;
 }).call(this,require('_process'))
-},{"./ReactElement":169,"./ReactPropTypeLocationNames":173,"./ReactPropTypesSecret":175,"./getIteratorFn":180,"_process":1,"fbjs/lib/emptyFunction":16,"fbjs/lib/warning":31}],175:[function(require,module,exports){
-arguments[4][103][0].apply(exports,arguments)
-},{"dup":103}],176:[function(require,module,exports){
+},{"./ReactElement":184,"./ReactPropTypeLocationNames":188,"./ReactPropTypesSecret":190,"./getIteratorFn":195,"_process":1,"fbjs/lib/emptyFunction":31,"fbjs/lib/warning":46}],190:[function(require,module,exports){
+arguments[4][118][0].apply(exports,arguments)
+},{"dup":118}],191:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -20550,9 +23832,9 @@ _assign(ReactPureComponent.prototype, ReactComponent.prototype);
 ReactPureComponent.prototype.isPureReactComponent = true;
 
 module.exports = ReactPureComponent;
-},{"./ReactComponent":165,"./ReactNoopUpdateQueue":172,"fbjs/lib/emptyObject":17,"object-assign":32}],177:[function(require,module,exports){
-arguments[4][111][0].apply(exports,arguments)
-},{"dup":111}],178:[function(require,module,exports){
+},{"./ReactComponent":180,"./ReactNoopUpdateQueue":187,"fbjs/lib/emptyObject":32,"object-assign":47}],192:[function(require,module,exports){
+arguments[4][126][0].apply(exports,arguments)
+},{"dup":126}],193:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20580,7 +23862,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = canDefineProperty;
 }).call(this,require('_process'))
-},{"_process":1}],179:[function(require,module,exports){
+},{"_process":1}],194:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20669,9 +23951,9 @@ function checkReactTypeSpec(typeSpecs, values, location, componentName, element,
 
 module.exports = checkReactTypeSpec;
 }).call(this,require('_process'))
-},{"./ReactComponentTreeHook":166,"./ReactPropTypeLocationNames":173,"./ReactPropTypesSecret":175,"./reactProdInvariant":182,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31}],180:[function(require,module,exports){
-arguments[4][144][0].apply(exports,arguments)
-},{"dup":144}],181:[function(require,module,exports){
+},{"./ReactComponentTreeHook":181,"./ReactPropTypeLocationNames":188,"./ReactPropTypesSecret":190,"./reactProdInvariant":197,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46}],195:[function(require,module,exports){
+arguments[4][159][0].apply(exports,arguments)
+},{"dup":159}],196:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20711,9 +23993,9 @@ function onlyChild(children) {
 
 module.exports = onlyChild;
 }).call(this,require('_process'))
-},{"./ReactElement":169,"./reactProdInvariant":182,"_process":1,"fbjs/lib/invariant":24}],182:[function(require,module,exports){
-arguments[4][153][0].apply(exports,arguments)
-},{"dup":153}],183:[function(require,module,exports){
+},{"./ReactElement":184,"./reactProdInvariant":197,"_process":1,"fbjs/lib/invariant":39}],197:[function(require,module,exports){
+arguments[4][168][0].apply(exports,arguments)
+},{"dup":168}],198:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-present, Facebook, Inc.
@@ -20891,9 +24173,1783 @@ function traverseAllChildren(children, callback, traverseContext) {
 
 module.exports = traverseAllChildren;
 }).call(this,require('_process'))
-},{"./KeyEscapeUtils":160,"./ReactCurrentOwner":167,"./ReactElementSymbol":170,"./getIteratorFn":180,"./reactProdInvariant":182,"_process":1,"fbjs/lib/invariant":24,"fbjs/lib/warning":31}],184:[function(require,module,exports){
+},{"./KeyEscapeUtils":175,"./ReactCurrentOwner":182,"./ReactElementSymbol":185,"./getIteratorFn":195,"./reactProdInvariant":197,"_process":1,"fbjs/lib/invariant":39,"fbjs/lib/warning":46}],199:[function(require,module,exports){
 'use strict';
 
 module.exports = require('./lib/React');
 
-},{"./lib/React":162}]},{},[7]);
+},{"./lib/React":177}],200:[function(require,module,exports){
+/**
+ * Root reference for iframes.
+ */
+
+var root;
+if (typeof window !== 'undefined') { // Browser window
+  root = window;
+} else if (typeof self !== 'undefined') { // Web Worker
+  root = self;
+} else { // Other environments
+  console.warn("Using browser-only version of superagent in non-browser environment");
+  root = this;
+}
+
+var Emitter = require('component-emitter');
+var RequestBase = require('./request-base');
+var isObject = require('./is-object');
+var ResponseBase = require('./response-base');
+var shouldRetry = require('./should-retry');
+
+/**
+ * Noop.
+ */
+
+function noop(){};
+
+/**
+ * Expose `request`.
+ */
+
+var request = exports = module.exports = function(method, url) {
+  // callback
+  if ('function' == typeof url) {
+    return new exports.Request('GET', method).end(url);
+  }
+
+  // url first
+  if (1 == arguments.length) {
+    return new exports.Request('GET', method);
+  }
+
+  return new exports.Request(method, url);
+}
+
+exports.Request = Request;
+
+/**
+ * Determine XHR.
+ */
+
+request.getXHR = function () {
+  if (root.XMLHttpRequest
+      && (!root.location || 'file:' != root.location.protocol
+          || !root.ActiveXObject)) {
+    return new XMLHttpRequest;
+  } else {
+    try { return new ActiveXObject('Microsoft.XMLHTTP'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP.6.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP.3.0'); } catch(e) {}
+    try { return new ActiveXObject('Msxml2.XMLHTTP'); } catch(e) {}
+  }
+  throw Error("Browser-only version of superagent could not find XHR");
+};
+
+/**
+ * Removes leading and trailing whitespace, added to support IE.
+ *
+ * @param {String} s
+ * @return {String}
+ * @api private
+ */
+
+var trim = ''.trim
+  ? function(s) { return s.trim(); }
+  : function(s) { return s.replace(/(^\s*|\s*$)/g, ''); };
+
+/**
+ * Serialize the given `obj`.
+ *
+ * @param {Object} obj
+ * @return {String}
+ * @api private
+ */
+
+function serialize(obj) {
+  if (!isObject(obj)) return obj;
+  var pairs = [];
+  for (var key in obj) {
+    pushEncodedKeyValuePair(pairs, key, obj[key]);
+  }
+  return pairs.join('&');
+}
+
+/**
+ * Helps 'serialize' with serializing arrays.
+ * Mutates the pairs array.
+ *
+ * @param {Array} pairs
+ * @param {String} key
+ * @param {Mixed} val
+ */
+
+function pushEncodedKeyValuePair(pairs, key, val) {
+  if (val != null) {
+    if (Array.isArray(val)) {
+      val.forEach(function(v) {
+        pushEncodedKeyValuePair(pairs, key, v);
+      });
+    } else if (isObject(val)) {
+      for(var subkey in val) {
+        pushEncodedKeyValuePair(pairs, key + '[' + subkey + ']', val[subkey]);
+      }
+    } else {
+      pairs.push(encodeURIComponent(key)
+        + '=' + encodeURIComponent(val));
+    }
+  } else if (val === null) {
+    pairs.push(encodeURIComponent(key));
+  }
+}
+
+/**
+ * Expose serialization method.
+ */
+
+ request.serializeObject = serialize;
+
+ /**
+  * Parse the given x-www-form-urlencoded `str`.
+  *
+  * @param {String} str
+  * @return {Object}
+  * @api private
+  */
+
+function parseString(str) {
+  var obj = {};
+  var pairs = str.split('&');
+  var pair;
+  var pos;
+
+  for (var i = 0, len = pairs.length; i < len; ++i) {
+    pair = pairs[i];
+    pos = pair.indexOf('=');
+    if (pos == -1) {
+      obj[decodeURIComponent(pair)] = '';
+    } else {
+      obj[decodeURIComponent(pair.slice(0, pos))] =
+        decodeURIComponent(pair.slice(pos + 1));
+    }
+  }
+
+  return obj;
+}
+
+/**
+ * Expose parser.
+ */
+
+request.parseString = parseString;
+
+/**
+ * Default MIME type map.
+ *
+ *     superagent.types.xml = 'application/xml';
+ *
+ */
+
+request.types = {
+  html: 'text/html',
+  json: 'application/json',
+  xml: 'text/xml',
+  urlencoded: 'application/x-www-form-urlencoded',
+  'form': 'application/x-www-form-urlencoded',
+  'form-data': 'application/x-www-form-urlencoded'
+};
+
+/**
+ * Default serialization map.
+ *
+ *     superagent.serialize['application/xml'] = function(obj){
+ *       return 'generated xml here';
+ *     };
+ *
+ */
+
+ request.serialize = {
+   'application/x-www-form-urlencoded': serialize,
+   'application/json': JSON.stringify
+ };
+
+ /**
+  * Default parsers.
+  *
+  *     superagent.parse['application/xml'] = function(str){
+  *       return { object parsed from str };
+  *     };
+  *
+  */
+
+request.parse = {
+  'application/x-www-form-urlencoded': parseString,
+  'application/json': JSON.parse
+};
+
+/**
+ * Parse the given header `str` into
+ * an object containing the mapped fields.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+function parseHeader(str) {
+  var lines = str.split(/\r?\n/);
+  var fields = {};
+  var index;
+  var line;
+  var field;
+  var val;
+
+  lines.pop(); // trailing CRLF
+
+  for (var i = 0, len = lines.length; i < len; ++i) {
+    line = lines[i];
+    index = line.indexOf(':');
+    field = line.slice(0, index).toLowerCase();
+    val = trim(line.slice(index + 1));
+    fields[field] = val;
+  }
+
+  return fields;
+}
+
+/**
+ * Check if `mime` is json or has +json structured syntax suffix.
+ *
+ * @param {String} mime
+ * @return {Boolean}
+ * @api private
+ */
+
+function isJSON(mime) {
+  return /[\/+]json\b/.test(mime);
+}
+
+/**
+ * Initialize a new `Response` with the given `xhr`.
+ *
+ *  - set flags (.ok, .error, etc)
+ *  - parse header
+ *
+ * Examples:
+ *
+ *  Aliasing `superagent` as `request` is nice:
+ *
+ *      request = superagent;
+ *
+ *  We can use the promise-like API, or pass callbacks:
+ *
+ *      request.get('/').end(function(res){});
+ *      request.get('/', function(res){});
+ *
+ *  Sending data can be chained:
+ *
+ *      request
+ *        .post('/user')
+ *        .send({ name: 'tj' })
+ *        .end(function(res){});
+ *
+ *  Or passed to `.send()`:
+ *
+ *      request
+ *        .post('/user')
+ *        .send({ name: 'tj' }, function(res){});
+ *
+ *  Or passed to `.post()`:
+ *
+ *      request
+ *        .post('/user', { name: 'tj' })
+ *        .end(function(res){});
+ *
+ * Or further reduced to a single call for simple cases:
+ *
+ *      request
+ *        .post('/user', { name: 'tj' }, function(res){});
+ *
+ * @param {XMLHTTPRequest} xhr
+ * @param {Object} options
+ * @api private
+ */
+
+function Response(req) {
+  this.req = req;
+  this.xhr = this.req.xhr;
+  // responseText is accessible only if responseType is '' or 'text' and on older browsers
+  this.text = ((this.req.method !='HEAD' && (this.xhr.responseType === '' || this.xhr.responseType === 'text')) || typeof this.xhr.responseType === 'undefined')
+     ? this.xhr.responseText
+     : null;
+  this.statusText = this.req.xhr.statusText;
+  var status = this.xhr.status;
+  // handle IE9 bug: http://stackoverflow.com/questions/10046972/msie-returns-status-code-of-1223-for-ajax-request
+  if (status === 1223) {
+      status = 204;
+  }
+  this._setStatusProperties(status);
+  this.header = this.headers = parseHeader(this.xhr.getAllResponseHeaders());
+  // getAllResponseHeaders sometimes falsely returns "" for CORS requests, but
+  // getResponseHeader still works. so we get content-type even if getting
+  // other headers fails.
+  this.header['content-type'] = this.xhr.getResponseHeader('content-type');
+  this._setHeaderProperties(this.header);
+
+  if (null === this.text && req._responseType) {
+    this.body = this.xhr.response;
+  } else {
+    this.body = this.req.method != 'HEAD'
+      ? this._parseBody(this.text ? this.text : this.xhr.response)
+      : null;
+  }
+}
+
+ResponseBase(Response.prototype);
+
+/**
+ * Parse the given body `str`.
+ *
+ * Used for auto-parsing of bodies. Parsers
+ * are defined on the `superagent.parse` object.
+ *
+ * @param {String} str
+ * @return {Mixed}
+ * @api private
+ */
+
+Response.prototype._parseBody = function(str){
+  var parse = request.parse[this.type];
+  if(this.req._parser) {
+    return this.req._parser(this, str);
+  }
+  if (!parse && isJSON(this.type)) {
+    parse = request.parse['application/json'];
+  }
+  return parse && str && (str.length || str instanceof Object)
+    ? parse(str)
+    : null;
+};
+
+/**
+ * Return an `Error` representative of this response.
+ *
+ * @return {Error}
+ * @api public
+ */
+
+Response.prototype.toError = function(){
+  var req = this.req;
+  var method = req.method;
+  var url = req.url;
+
+  var msg = 'cannot ' + method + ' ' + url + ' (' + this.status + ')';
+  var err = new Error(msg);
+  err.status = this.status;
+  err.method = method;
+  err.url = url;
+
+  return err;
+};
+
+/**
+ * Expose `Response`.
+ */
+
+request.Response = Response;
+
+/**
+ * Initialize a new `Request` with the given `method` and `url`.
+ *
+ * @param {String} method
+ * @param {String} url
+ * @api public
+ */
+
+function Request(method, url) {
+  var self = this;
+  this._query = this._query || [];
+  this.method = method;
+  this.url = url;
+  this.header = {}; // preserves header name case
+  this._header = {}; // coerces header names to lowercase
+  this.on('end', function(){
+    var err = null;
+    var res = null;
+
+    try {
+      res = new Response(self);
+    } catch(e) {
+      err = new Error('Parser is unable to parse the response');
+      err.parse = true;
+      err.original = e;
+      // issue #675: return the raw response if the response parsing fails
+      if (self.xhr) {
+        // ie9 doesn't have 'response' property
+        err.rawResponse = typeof self.xhr.responseType == 'undefined' ? self.xhr.responseText : self.xhr.response;
+        // issue #876: return the http status code if the response parsing fails
+        err.status = self.xhr.status ? self.xhr.status : null;
+        err.statusCode = err.status; // backwards-compat only
+      } else {
+        err.rawResponse = null;
+        err.status = null;
+      }
+
+      return self.callback(err);
+    }
+
+    self.emit('response', res);
+
+    var new_err;
+    try {
+      if (!self._isResponseOK(res)) {
+        new_err = new Error(res.statusText || 'Unsuccessful HTTP response');
+        new_err.original = err;
+        new_err.response = res;
+        new_err.status = res.status;
+      }
+    } catch(e) {
+      new_err = e; // #985 touching res may cause INVALID_STATE_ERR on old Android
+    }
+
+    // #1000 don't catch errors from the callback to avoid double calling it
+    if (new_err) {
+      self.callback(new_err, res);
+    } else {
+      self.callback(null, res);
+    }
+  });
+}
+
+/**
+ * Mixin `Emitter` and `RequestBase`.
+ */
+
+Emitter(Request.prototype);
+RequestBase(Request.prototype);
+
+/**
+ * Set Content-Type to `type`, mapping values from `request.types`.
+ *
+ * Examples:
+ *
+ *      superagent.types.xml = 'application/xml';
+ *
+ *      request.post('/')
+ *        .type('xml')
+ *        .send(xmlstring)
+ *        .end(callback);
+ *
+ *      request.post('/')
+ *        .type('application/xml')
+ *        .send(xmlstring)
+ *        .end(callback);
+ *
+ * @param {String} type
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.type = function(type){
+  this.set('Content-Type', request.types[type] || type);
+  return this;
+};
+
+/**
+ * Set Accept to `type`, mapping values from `request.types`.
+ *
+ * Examples:
+ *
+ *      superagent.types.json = 'application/json';
+ *
+ *      request.get('/agent')
+ *        .accept('json')
+ *        .end(callback);
+ *
+ *      request.get('/agent')
+ *        .accept('application/json')
+ *        .end(callback);
+ *
+ * @param {String} accept
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.accept = function(type){
+  this.set('Accept', request.types[type] || type);
+  return this;
+};
+
+/**
+ * Set Authorization field value with `user` and `pass`.
+ *
+ * @param {String} user
+ * @param {String} [pass] optional in case of using 'bearer' as type
+ * @param {Object} options with 'type' property 'auto', 'basic' or 'bearer' (default 'basic')
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.auth = function(user, pass, options){
+  if (typeof pass === 'object' && pass !== null) { // pass is optional and can substitute for options
+    options = pass;
+  }
+  if (!options) {
+    options = {
+      type: 'function' === typeof btoa ? 'basic' : 'auto',
+    }
+  }
+
+  switch (options.type) {
+    case 'basic':
+      this.set('Authorization', 'Basic ' + btoa(user + ':' + pass));
+    break;
+
+    case 'auto':
+      this.username = user;
+      this.password = pass;
+    break;
+
+    case 'bearer': // usage would be .auth(accessToken, { type: 'bearer' })
+      this.set('Authorization', 'Bearer ' + user);
+    break;
+  }
+  return this;
+};
+
+/**
+ * Add query-string `val`.
+ *
+ * Examples:
+ *
+ *   request.get('/shoes')
+ *     .query('size=10')
+ *     .query({ color: 'blue' })
+ *
+ * @param {Object|String} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.query = function(val){
+  if ('string' != typeof val) val = serialize(val);
+  if (val) this._query.push(val);
+  return this;
+};
+
+/**
+ * Queue the given `file` as an attachment to the specified `field`,
+ * with optional `options` (or filename).
+ *
+ * ``` js
+ * request.post('/upload')
+ *   .attach('content', new Blob(['<a id="a"><b id="b">hey!</b></a>'], { type: "text/html"}))
+ *   .end(callback);
+ * ```
+ *
+ * @param {String} field
+ * @param {Blob|File} file
+ * @param {String|Object} options
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.attach = function(field, file, options){
+  if (file) {
+    if (this._data) {
+      throw Error("superagent can't mix .send() and .attach()");
+    }
+
+    this._getFormData().append(field, file, options || file.name);
+  }
+  return this;
+};
+
+Request.prototype._getFormData = function(){
+  if (!this._formData) {
+    this._formData = new root.FormData();
+  }
+  return this._formData;
+};
+
+/**
+ * Invoke the callback with `err` and `res`
+ * and handle arity check.
+ *
+ * @param {Error} err
+ * @param {Response} res
+ * @api private
+ */
+
+Request.prototype.callback = function(err, res){
+  // console.log(this._retries, this._maxRetries)
+  if (this._maxRetries && this._retries++ < this._maxRetries && shouldRetry(err, res)) {
+    return this._retry();
+  }
+
+  var fn = this._callback;
+  this.clearTimeout();
+
+  if (err) {
+    if (this._maxRetries) err.retries = this._retries - 1;
+    this.emit('error', err);
+  }
+
+  fn(err, res);
+};
+
+/**
+ * Invoke callback with x-domain error.
+ *
+ * @api private
+ */
+
+Request.prototype.crossDomainError = function(){
+  var err = new Error('Request has been terminated\nPossible causes: the network is offline, Origin is not allowed by Access-Control-Allow-Origin, the page is being unloaded, etc.');
+  err.crossDomain = true;
+
+  err.status = this.status;
+  err.method = this.method;
+  err.url = this.url;
+
+  this.callback(err);
+};
+
+// This only warns, because the request is still likely to work
+Request.prototype.buffer = Request.prototype.ca = Request.prototype.agent = function(){
+  console.warn("This is not supported in browser version of superagent");
+  return this;
+};
+
+// This throws, because it can't send/receive data as expected
+Request.prototype.pipe = Request.prototype.write = function(){
+  throw Error("Streaming is not supported in browser version of superagent");
+};
+
+/**
+ * Check if `obj` is a host object,
+ * we don't want to serialize these :)
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+Request.prototype._isHost = function _isHost(obj) {
+  // Native objects stringify to [object File], [object Blob], [object FormData], etc.
+  return obj && 'object' === typeof obj && !Array.isArray(obj) && Object.prototype.toString.call(obj) !== '[object Object]';
+}
+
+/**
+ * Initiate request, invoking callback `fn(res)`
+ * with an instanceof `Response`.
+ *
+ * @param {Function} fn
+ * @return {Request} for chaining
+ * @api public
+ */
+
+Request.prototype.end = function(fn){
+  if (this._endCalled) {
+    console.warn("Warning: .end() was called twice. This is not supported in superagent");
+  }
+  this._endCalled = true;
+
+  // store callback
+  this._callback = fn || noop;
+
+  // querystring
+  this._finalizeQueryString();
+
+  return this._end();
+};
+
+Request.prototype._end = function() {
+  var self = this;
+  var xhr = this.xhr = request.getXHR();
+  var data = this._formData || this._data;
+
+  this._setTimeouts();
+
+  // state change
+  xhr.onreadystatechange = function(){
+    var readyState = xhr.readyState;
+    if (readyState >= 2 && self._responseTimeoutTimer) {
+      clearTimeout(self._responseTimeoutTimer);
+    }
+    if (4 != readyState) {
+      return;
+    }
+
+    // In IE9, reads to any property (e.g. status) off of an aborted XHR will
+    // result in the error "Could not complete the operation due to error c00c023f"
+    var status;
+    try { status = xhr.status } catch(e) { status = 0; }
+
+    if (!status) {
+      if (self.timedout || self._aborted) return;
+      return self.crossDomainError();
+    }
+    self.emit('end');
+  };
+
+  // progress
+  var handleProgress = function(direction, e) {
+    if (e.total > 0) {
+      e.percent = e.loaded / e.total * 100;
+    }
+    e.direction = direction;
+    self.emit('progress', e);
+  }
+  if (this.hasListeners('progress')) {
+    try {
+      xhr.onprogress = handleProgress.bind(null, 'download');
+      if (xhr.upload) {
+        xhr.upload.onprogress = handleProgress.bind(null, 'upload');
+      }
+    } catch(e) {
+      // Accessing xhr.upload fails in IE from a web worker, so just pretend it doesn't exist.
+      // Reported here:
+      // https://connect.microsoft.com/IE/feedback/details/837245/xmlhttprequest-upload-throws-invalid-argument-when-used-from-web-worker-context
+    }
+  }
+
+  // initiate request
+  try {
+    if (this.username && this.password) {
+      xhr.open(this.method, this.url, true, this.username, this.password);
+    } else {
+      xhr.open(this.method, this.url, true);
+    }
+  } catch (err) {
+    // see #1149
+    return this.callback(err);
+  }
+
+  // CORS
+  if (this._withCredentials) xhr.withCredentials = true;
+
+  // body
+  if (!this._formData && 'GET' != this.method && 'HEAD' != this.method && 'string' != typeof data && !this._isHost(data)) {
+    // serialize stuff
+    var contentType = this._header['content-type'];
+    var serialize = this._serializer || request.serialize[contentType ? contentType.split(';')[0] : ''];
+    if (!serialize && isJSON(contentType)) {
+      serialize = request.serialize['application/json'];
+    }
+    if (serialize) data = serialize(data);
+  }
+
+  // set header fields
+  for (var field in this.header) {
+    if (null == this.header[field]) continue;
+
+    if (this.header.hasOwnProperty(field))
+      xhr.setRequestHeader(field, this.header[field]);
+  }
+
+  if (this._responseType) {
+    xhr.responseType = this._responseType;
+  }
+
+  // send stuff
+  this.emit('request', this);
+
+  // IE11 xhr.send(undefined) sends 'undefined' string as POST payload (instead of nothing)
+  // We need null here if data is undefined
+  xhr.send(typeof data !== 'undefined' ? data : null);
+  return this;
+};
+
+/**
+ * GET `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} [data] or fn
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.get = function(url, data, fn){
+  var req = request('GET', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.query(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * HEAD `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} [data] or fn
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.head = function(url, data, fn){
+  var req = request('HEAD', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.query(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * OPTIONS query to `url` with optional callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} [data] or fn
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.options = function(url, data, fn){
+  var req = request('OPTIONS', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * DELETE `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed} [data]
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+function del(url, data, fn){
+  var req = request('DELETE', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+request['del'] = del;
+request['delete'] = del;
+
+/**
+ * PATCH `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed} [data]
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.patch = function(url, data, fn){
+  var req = request('PATCH', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * POST `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed} [data]
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.post = function(url, data, fn){
+  var req = request('POST', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+/**
+ * PUT `url` with optional `data` and callback `fn(res)`.
+ *
+ * @param {String} url
+ * @param {Mixed|Function} [data] or fn
+ * @param {Function} [fn]
+ * @return {Request}
+ * @api public
+ */
+
+request.put = function(url, data, fn){
+  var req = request('PUT', url);
+  if ('function' == typeof data) fn = data, data = null;
+  if (data) req.send(data);
+  if (fn) req.end(fn);
+  return req;
+};
+
+},{"./is-object":201,"./request-base":202,"./response-base":203,"./should-retry":204,"component-emitter":11}],201:[function(require,module,exports){
+/**
+ * Check if `obj` is an object.
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isObject(obj) {
+  return null !== obj && 'object' === typeof obj;
+}
+
+module.exports = isObject;
+
+},{}],202:[function(require,module,exports){
+/**
+ * Module of mixed-in functions shared between node and client code
+ */
+var isObject = require('./is-object');
+
+/**
+ * Expose `RequestBase`.
+ */
+
+module.exports = RequestBase;
+
+/**
+ * Initialize a new `RequestBase`.
+ *
+ * @api public
+ */
+
+function RequestBase(obj) {
+  if (obj) return mixin(obj);
+}
+
+/**
+ * Mixin the prototype properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in RequestBase.prototype) {
+    obj[key] = RequestBase.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Clear previous timeout.
+ *
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.clearTimeout = function _clearTimeout(){
+  clearTimeout(this._timer);
+  clearTimeout(this._responseTimeoutTimer);
+  delete this._timer;
+  delete this._responseTimeoutTimer;
+  return this;
+};
+
+/**
+ * Override default response body parser
+ *
+ * This function will be called to convert incoming data into request.body
+ *
+ * @param {Function}
+ * @api public
+ */
+
+RequestBase.prototype.parse = function parse(fn){
+  this._parser = fn;
+  return this;
+};
+
+/**
+ * Set format of binary response body.
+ * In browser valid formats are 'blob' and 'arraybuffer',
+ * which return Blob and ArrayBuffer, respectively.
+ *
+ * In Node all values result in Buffer.
+ *
+ * Examples:
+ *
+ *      req.get('/')
+ *        .responseType('blob')
+ *        .end(callback);
+ *
+ * @param {String} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.responseType = function(val){
+  this._responseType = val;
+  return this;
+};
+
+/**
+ * Override default request body serializer
+ *
+ * This function will be called to convert data set via .send or .attach into payload to send
+ *
+ * @param {Function}
+ * @api public
+ */
+
+RequestBase.prototype.serialize = function serialize(fn){
+  this._serializer = fn;
+  return this;
+};
+
+/**
+ * Set timeouts.
+ *
+ * - response timeout is time between sending request and receiving the first byte of the response. Includes DNS and connection time.
+ * - deadline is the time from start of the request to receiving response body in full. If the deadline is too short large files may not load at all on slow connections.
+ *
+ * Value of 0 or false means no timeout.
+ *
+ * @param {Number|Object} ms or {response, deadline}
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.timeout = function timeout(options){
+  if (!options || 'object' !== typeof options) {
+    this._timeout = options;
+    this._responseTimeout = 0;
+    return this;
+  }
+
+  for(var option in options) {
+    switch(option) {
+      case 'deadline':
+        this._timeout = options.deadline;
+        break;
+      case 'response':
+        this._responseTimeout = options.response;
+        break;
+      default:
+        console.warn("Unknown timeout option", option);
+    }
+  }
+  return this;
+};
+
+/**
+ * Set number of retry attempts on error.
+ *
+ * Failed requests will be retried 'count' times if timeout or err.code >= 500.
+ *
+ * @param {Number} count
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.retry = function retry(count){
+  // Default to 1 if no count passed or true
+  if (arguments.length === 0 || count === true) count = 1;
+  if (count <= 0) count = 0;
+  this._maxRetries = count;
+  this._retries = 0;
+  return this;
+};
+
+/**
+ * Retry request
+ *
+ * @return {Request} for chaining
+ * @api private
+ */
+
+RequestBase.prototype._retry = function() {
+  this.clearTimeout();
+
+  // node
+  if (this.req) {
+    this.req = null;
+    this.req = this.request();
+  }
+
+  this._aborted = false;
+  this.timedout = false;
+
+  return this._end();
+};
+
+/**
+ * Promise support
+ *
+ * @param {Function} resolve
+ * @param {Function} [reject]
+ * @return {Request}
+ */
+
+RequestBase.prototype.then = function then(resolve, reject) {
+  if (!this._fullfilledPromise) {
+    var self = this;
+    if (this._endCalled) {
+      console.warn("Warning: superagent request was sent twice, because both .end() and .then() were called. Never call .end() if you use promises");
+    }
+    this._fullfilledPromise = new Promise(function(innerResolve, innerReject){
+      self.end(function(err, res){
+        if (err) innerReject(err); else innerResolve(res);
+      });
+    });
+  }
+  return this._fullfilledPromise.then(resolve, reject);
+}
+
+RequestBase.prototype.catch = function(cb) {
+  return this.then(undefined, cb);
+};
+
+/**
+ * Allow for extension
+ */
+
+RequestBase.prototype.use = function use(fn) {
+  fn(this);
+  return this;
+}
+
+RequestBase.prototype.ok = function(cb) {
+  if ('function' !== typeof cb) throw Error("Callback required");
+  this._okCallback = cb;
+  return this;
+};
+
+RequestBase.prototype._isResponseOK = function(res) {
+  if (!res) {
+    return false;
+  }
+
+  if (this._okCallback) {
+    return this._okCallback(res);
+  }
+
+  return res.status >= 200 && res.status < 300;
+};
+
+
+/**
+ * Get request header `field`.
+ * Case-insensitive.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api public
+ */
+
+RequestBase.prototype.get = function(field){
+  return this._header[field.toLowerCase()];
+};
+
+/**
+ * Get case-insensitive header `field` value.
+ * This is a deprecated internal API. Use `.get(field)` instead.
+ *
+ * (getHeader is no longer used internally by the superagent code base)
+ *
+ * @param {String} field
+ * @return {String}
+ * @api private
+ * @deprecated
+ */
+
+RequestBase.prototype.getHeader = RequestBase.prototype.get;
+
+/**
+ * Set header `field` to `val`, or multiple fields with one object.
+ * Case-insensitive.
+ *
+ * Examples:
+ *
+ *      req.get('/')
+ *        .set('Accept', 'application/json')
+ *        .set('X-API-Key', 'foobar')
+ *        .end(callback);
+ *
+ *      req.get('/')
+ *        .set({ Accept: 'application/json', 'X-API-Key': 'foobar' })
+ *        .end(callback);
+ *
+ * @param {String|Object} field
+ * @param {String} val
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.set = function(field, val){
+  if (isObject(field)) {
+    for (var key in field) {
+      this.set(key, field[key]);
+    }
+    return this;
+  }
+  this._header[field.toLowerCase()] = val;
+  this.header[field] = val;
+  return this;
+};
+
+/**
+ * Remove header `field`.
+ * Case-insensitive.
+ *
+ * Example:
+ *
+ *      req.get('/')
+ *        .unset('User-Agent')
+ *        .end(callback);
+ *
+ * @param {String} field
+ */
+RequestBase.prototype.unset = function(field){
+  delete this._header[field.toLowerCase()];
+  delete this.header[field];
+  return this;
+};
+
+/**
+ * Write the field `name` and `val`, or multiple fields with one object
+ * for "multipart/form-data" request bodies.
+ *
+ * ``` js
+ * request.post('/upload')
+ *   .field('foo', 'bar')
+ *   .end(callback);
+ *
+ * request.post('/upload')
+ *   .field({ foo: 'bar', baz: 'qux' })
+ *   .end(callback);
+ * ```
+ *
+ * @param {String|Object} name
+ * @param {String|Blob|File|Buffer|fs.ReadStream} val
+ * @return {Request} for chaining
+ * @api public
+ */
+RequestBase.prototype.field = function(name, val) {
+
+  // name should be either a string or an object.
+  if (null === name ||  undefined === name) {
+    throw new Error('.field(name, val) name can not be empty');
+  }
+
+  if (this._data) {
+    console.error(".field() can't be used if .send() is used. Please use only .send() or only .field() & .attach()");
+  }
+
+  if (isObject(name)) {
+    for (var key in name) {
+      this.field(key, name[key]);
+    }
+    return this;
+  }
+
+  if (Array.isArray(val)) {
+    for (var i in val) {
+      this.field(name, val[i]);
+    }
+    return this;
+  }
+
+  // val should be defined now
+  if (null === val || undefined === val) {
+    throw new Error('.field(name, val) val can not be empty');
+  }
+  if ('boolean' === typeof val) {
+    val = '' + val;
+  }
+  this._getFormData().append(name, val);
+  return this;
+};
+
+/**
+ * Abort the request, and clear potential timeout.
+ *
+ * @return {Request}
+ * @api public
+ */
+RequestBase.prototype.abort = function(){
+  if (this._aborted) {
+    return this;
+  }
+  this._aborted = true;
+  this.xhr && this.xhr.abort(); // browser
+  this.req && this.req.abort(); // node
+  this.clearTimeout();
+  this.emit('abort');
+  return this;
+};
+
+/**
+ * Enable transmission of cookies with x-domain requests.
+ *
+ * Note that for this to work the origin must not be
+ * using "Access-Control-Allow-Origin" with a wildcard,
+ * and also must set "Access-Control-Allow-Credentials"
+ * to "true".
+ *
+ * @api public
+ */
+
+RequestBase.prototype.withCredentials = function(on){
+  // This is browser-only functionality. Node side is no-op.
+  if(on==undefined) on = true;
+  this._withCredentials = on;
+  return this;
+};
+
+/**
+ * Set the max redirects to `n`. Does noting in browser XHR implementation.
+ *
+ * @param {Number} n
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.redirects = function(n){
+  this._maxRedirects = n;
+  return this;
+};
+
+/**
+ * Convert to a plain javascript object (not JSON string) of scalar properties.
+ * Note as this method is designed to return a useful non-this value,
+ * it cannot be chained.
+ *
+ * @return {Object} describing method, url, and data of this request
+ * @api public
+ */
+
+RequestBase.prototype.toJSON = function(){
+  return {
+    method: this.method,
+    url: this.url,
+    data: this._data,
+    headers: this._header
+  };
+};
+
+
+/**
+ * Send `data` as the request body, defaulting the `.type()` to "json" when
+ * an object is given.
+ *
+ * Examples:
+ *
+ *       // manual json
+ *       request.post('/user')
+ *         .type('json')
+ *         .send('{"name":"tj"}')
+ *         .end(callback)
+ *
+ *       // auto json
+ *       request.post('/user')
+ *         .send({ name: 'tj' })
+ *         .end(callback)
+ *
+ *       // manual x-www-form-urlencoded
+ *       request.post('/user')
+ *         .type('form')
+ *         .send('name=tj')
+ *         .end(callback)
+ *
+ *       // auto x-www-form-urlencoded
+ *       request.post('/user')
+ *         .type('form')
+ *         .send({ name: 'tj' })
+ *         .end(callback)
+ *
+ *       // defaults to x-www-form-urlencoded
+ *      request.post('/user')
+ *        .send('name=tobi')
+ *        .send('species=ferret')
+ *        .end(callback)
+ *
+ * @param {String|Object} data
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.send = function(data){
+  var isObj = isObject(data);
+  var type = this._header['content-type'];
+
+  if (this._formData) {
+    console.error(".send() can't be used if .attach() or .field() is used. Please use only .send() or only .field() & .attach()");
+  }
+
+  if (isObj && !this._data) {
+    if (Array.isArray(data)) {
+      this._data = [];
+    } else if (!this._isHost(data)) {
+      this._data = {};
+    }
+  } else if (data && this._data && this._isHost(this._data)) {
+    throw Error("Can't merge these send calls");
+  }
+
+  // merge
+  if (isObj && isObject(this._data)) {
+    for (var key in data) {
+      this._data[key] = data[key];
+    }
+  } else if ('string' == typeof data) {
+    // default to x-www-form-urlencoded
+    if (!type) this.type('form');
+    type = this._header['content-type'];
+    if ('application/x-www-form-urlencoded' == type) {
+      this._data = this._data
+        ? this._data + '&' + data
+        : data;
+    } else {
+      this._data = (this._data || '') + data;
+    }
+  } else {
+    this._data = data;
+  }
+
+  if (!isObj || this._isHost(data)) {
+    return this;
+  }
+
+  // default to json
+  if (!type) this.type('json');
+  return this;
+};
+
+
+/**
+ * Sort `querystring` by the sort function
+ *
+ *
+ * Examples:
+ *
+ *       // default order
+ *       request.get('/user')
+ *         .query('name=Nick')
+ *         .query('search=Manny')
+ *         .sortQuery()
+ *         .end(callback)
+ *
+ *       // customized sort function
+ *       request.get('/user')
+ *         .query('name=Nick')
+ *         .query('search=Manny')
+ *         .sortQuery(function(a, b){
+ *           return a.length - b.length;
+ *         })
+ *         .end(callback)
+ *
+ *
+ * @param {Function} sort
+ * @return {Request} for chaining
+ * @api public
+ */
+
+RequestBase.prototype.sortQuery = function(sort) {
+  // _sort default to true but otherwise can be a function or boolean
+  this._sort = typeof sort === 'undefined' ? true : sort;
+  return this;
+};
+
+/**
+ * Compose querystring to append to req.url
+ *
+ * @api private
+ */
+RequestBase.prototype._finalizeQueryString = function(){
+  var query = this._query.join('&');
+  if (query) {
+    this.url += (this.url.indexOf('?') >= 0 ? '&' : '?') + query;
+  }
+  this._query.length = 0; // Makes the call idempotent
+
+  if (this._sort) {
+    var index = this.url.indexOf('?');
+    if (index >= 0) {
+      var queryArr = this.url.substring(index + 1).split('&');
+      if ('function' === typeof this._sort) {
+        queryArr.sort(this._sort);
+      } else {
+        queryArr.sort();
+      }
+      this.url = this.url.substring(0, index) + '?' + queryArr.join('&');
+    }
+  }
+};
+
+// For backwards compat only
+RequestBase.prototype._appendQueryString = function() {console.trace("Unsupported");}
+
+/**
+ * Invoke callback with timeout error.
+ *
+ * @api private
+ */
+
+RequestBase.prototype._timeoutError = function(reason, timeout, errno){
+  if (this._aborted) {
+    return;
+  }
+  var err = new Error(reason + timeout + 'ms exceeded');
+  err.timeout = timeout;
+  err.code = 'ECONNABORTED';
+  err.errno = errno;
+  this.timedout = true;
+  this.abort();
+  this.callback(err);
+};
+
+RequestBase.prototype._setTimeouts = function() {
+  var self = this;
+
+  // deadline
+  if (this._timeout && !this._timer) {
+    this._timer = setTimeout(function(){
+      self._timeoutError('Timeout of ', self._timeout, 'ETIME');
+    }, this._timeout);
+  }
+  // response timeout
+  if (this._responseTimeout && !this._responseTimeoutTimer) {
+    this._responseTimeoutTimer = setTimeout(function(){
+      self._timeoutError('Response timeout of ', self._responseTimeout, 'ETIMEDOUT');
+    }, this._responseTimeout);
+  }
+}
+
+},{"./is-object":201}],203:[function(require,module,exports){
+
+/**
+ * Module dependencies.
+ */
+
+var utils = require('./utils');
+
+/**
+ * Expose `ResponseBase`.
+ */
+
+module.exports = ResponseBase;
+
+/**
+ * Initialize a new `ResponseBase`.
+ *
+ * @api public
+ */
+
+function ResponseBase(obj) {
+  if (obj) return mixin(obj);
+}
+
+/**
+ * Mixin the prototype properties.
+ *
+ * @param {Object} obj
+ * @return {Object}
+ * @api private
+ */
+
+function mixin(obj) {
+  for (var key in ResponseBase.prototype) {
+    obj[key] = ResponseBase.prototype[key];
+  }
+  return obj;
+}
+
+/**
+ * Get case-insensitive `field` value.
+ *
+ * @param {String} field
+ * @return {String}
+ * @api public
+ */
+
+ResponseBase.prototype.get = function(field){
+    return this.header[field.toLowerCase()];
+};
+
+/**
+ * Set header related properties:
+ *
+ *   - `.type` the content type without params
+ *
+ * A response of "Content-Type: text/plain; charset=utf-8"
+ * will provide you with a `.type` of "text/plain".
+ *
+ * @param {Object} header
+ * @api private
+ */
+
+ResponseBase.prototype._setHeaderProperties = function(header){
+    // TODO: moar!
+    // TODO: make this a util
+
+    // content-type
+    var ct = header['content-type'] || '';
+    this.type = utils.type(ct);
+
+    // params
+    var params = utils.params(ct);
+    for (var key in params) this[key] = params[key];
+
+    this.links = {};
+
+    // links
+    try {
+        if (header.link) {
+            this.links = utils.parseLinks(header.link);
+        }
+    } catch (err) {
+        // ignore
+    }
+};
+
+/**
+ * Set flags such as `.ok` based on `status`.
+ *
+ * For example a 2xx response will give you a `.ok` of __true__
+ * whereas 5xx will be __false__ and `.error` will be __true__. The
+ * `.clientError` and `.serverError` are also available to be more
+ * specific, and `.statusType` is the class of error ranging from 1..5
+ * sometimes useful for mapping respond colors etc.
+ *
+ * "sugar" properties are also defined for common cases. Currently providing:
+ *
+ *   - .noContent
+ *   - .badRequest
+ *   - .unauthorized
+ *   - .notAcceptable
+ *   - .notFound
+ *
+ * @param {Number} status
+ * @api private
+ */
+
+ResponseBase.prototype._setStatusProperties = function(status){
+    var type = status / 100 | 0;
+
+    // status / class
+    this.status = this.statusCode = status;
+    this.statusType = type;
+
+    // basics
+    this.info = 1 == type;
+    this.ok = 2 == type;
+    this.redirect = 3 == type;
+    this.clientError = 4 == type;
+    this.serverError = 5 == type;
+    this.error = (4 == type || 5 == type)
+        ? this.toError()
+        : false;
+
+    // sugar
+    this.accepted = 202 == status;
+    this.noContent = 204 == status;
+    this.badRequest = 400 == status;
+    this.unauthorized = 401 == status;
+    this.notAcceptable = 406 == status;
+    this.forbidden = 403 == status;
+    this.notFound = 404 == status;
+};
+
+},{"./utils":205}],204:[function(require,module,exports){
+var ERROR_CODES = [
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'EADDRINFO',
+  'ESOCKETTIMEDOUT'
+];
+
+/**
+ * Determine if a request should be retried.
+ * (Borrowed from segmentio/superagent-retry)
+ *
+ * @param {Error} err
+ * @param {Response} [res]
+ * @returns {Boolean}
+ */
+module.exports = function shouldRetry(err, res) {
+  if (err && err.code && ~ERROR_CODES.indexOf(err.code)) return true;
+  if (res && res.status && res.status >= 500) return true;
+  // Superagent timeout
+  if (err && 'timeout' in err && err.code == 'ECONNABORTED') return true;
+  if (err && 'crossDomain' in err) return true;
+  return false;
+};
+
+},{}],205:[function(require,module,exports){
+
+/**
+ * Return the mime type for the given `str`.
+ *
+ * @param {String} str
+ * @return {String}
+ * @api private
+ */
+
+exports.type = function(str){
+  return str.split(/ *; */).shift();
+};
+
+/**
+ * Return header field parameters.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+exports.params = function(str){
+  return str.split(/ *; */).reduce(function(obj, str){
+    var parts = str.split(/ *= */);
+    var key = parts.shift();
+    var val = parts.shift();
+
+    if (key && val) obj[key] = val;
+    return obj;
+  }, {});
+};
+
+/**
+ * Parse Link header fields.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+exports.parseLinks = function(str){
+  return str.split(/ *, */).reduce(function(obj, str){
+    var parts = str.split(/ *; */);
+    var url = parts[0].slice(1, -1);
+    var rel = parts[1].split(/ *= */)[1].slice(1, -1);
+    obj[rel] = url;
+    return obj;
+  }, {});
+};
+
+/**
+ * Strip content related fields from `header`.
+ *
+ * @param {Object} header
+ * @return {Object} header
+ * @api private
+ */
+
+exports.cleanHeader = function(header, shouldStripCookie){
+  delete header['content-type'];
+  delete header['content-length'];
+  delete header['transfer-encoding'];
+  delete header['host'];
+  if (shouldStripCookie) {
+    delete header['cookie'];
+  }
+  return header;
+};
+},{}]},{},[7]);
