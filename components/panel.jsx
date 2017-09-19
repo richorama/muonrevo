@@ -14,7 +14,7 @@ module.exports = React.createClass({
             <div className="box-header with-border">
               <h3 className="box-title">{this.props.title}<small style={{marginLeft:"10px"}}>{this.props.subTitle}</small></h3>
             </div>
-            <div className="box-body">
+            <div className={"box-body " + (this.props.noPadding ? "no-padding" : "")}>
                 {body}
             </div>
             {footer}
