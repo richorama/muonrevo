@@ -7,8 +7,9 @@ var marked = require('marked');
 var Files = React.createClass({
     render:function(){
         return <Panel title="Entries" noPadding={true}>
+            <div style={{overflow:"auto", height:"80vh"}}>
             <table className="table"><tbody>
-            {this.props.files.filter(x => x[".tag"] === "file").map((file) => {
+            {this.props.files.filter(x => x[".tag"] === "file").map(file => {
                 var style = "";
                 if (file === this.props.selectedFile){
                     style = "active"
@@ -16,12 +17,12 @@ var Files = React.createClass({
 
                 return <tr key={file.id} className={style} ><td>
                     <a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
-                        <strong>{(file.name || "").replace('.md', '')}</strong>
+                        <strong>{toDisplayName(file.name)}</strong>
                         <p className="text-muted">{file.client_modified}</p>
                     </a>
                 </td></tr>
             })}
-            </tbody></table>
+            </tbody></table></div>
         </Panel>
 
     }
@@ -34,12 +35,13 @@ var FilePreview = React.createClass({
         return {__html: marked(this.props.fileContent || "")}; 
     },
     render:function(){
-        console.log(this.props.fileContent)
-        return <Panel title={this.props.file.name}>
-            <If test={this.props.loading}>
-                <span>Loading...</span>
-                <div dangerouslySetInnerHTML={this.createMarkup()}></div>
-            </If>
+        return <Panel title={<span><a href={`#/edit${this.props.file.path_lower}`} className="btn btn-primary btn-sm pull-right">Edit</a>{toDisplayName(this.props.file.name)}</span>}>
+            <div style={{overflow:"auto", height:"80vh"}}>
+                <If test={this.props.loading}>
+                    <span>Loading...</span>
+                    <div  dangerouslySetInnerHTML={this.createMarkup()}></div>
+                </If>
+            </div>
         </Panel>
     }
 
@@ -89,3 +91,7 @@ module.exports = React.createClass({
         </Page>
     }
 });
+
+function toDisplayName(value){
+    return (value || "").replace(".md", "");
+}

@@ -5,7 +5,8 @@ var Panel = require('./components/panel.jsx');
 var render = require('./components/render.jsx');
 var storage = require('./lib/storage');
 var dbxUtil = require('./lib/dbxUtils');
-var FolderPage = require('./components/folder-page.jsx')
+var FolderPage = require('./components/folder-page.jsx');
+var EditPage = require('./components/edit-page.jsx');
 
 routie('', home);
 routie('/', home);
@@ -36,6 +37,23 @@ function home(){
         render(<FolderPage files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , '#/');
     };
 }
+
+routie('/edit*', path => {
+    render.loading();
+    var dbx = dbxUtil.getDbx();
+
+    var fileContent;
+    dbx.filesDownload({path:path}).then(data => {
+        readContent(data, content => {
+            fileContent = content;    
+            renderPage();
+        });
+    }).catch(dbxUtil.handleError);
+
+    var renderPage = () => {
+        render(<EditPage fileContent={fileContent}  /> , '#/');
+    };
+});
 
 routie('access_token=*', (query)=>{
     var token = query.split('&')[0];
