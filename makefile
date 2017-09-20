@@ -11,3 +11,6 @@ build:
 	@wc -c ./dist/muonrevo.js
 	@wc -c ./dist/muonrevo.min.js
 	@echo Done
+
+run: build
+	@static

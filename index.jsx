@@ -13,11 +13,28 @@ routie('/', home);
 function home(){
     render.loading();
 
+    var filesData;  
+    var fileContent;
     var dbx = dbxUtil.getDbx();
     dbx.filesListFolder({path:''}).then(data => {
-        console.log(data);
-        render(<FolderPage files={data.entries} /> , '#/');
+        filesData = data;
+        renderPage();
     }).catch(dbxUtil.handleError);
+
+    var loadFile = (meta) => {
+        console.log(meta);
+        dbx.filesDownload({path:meta.path_lower}).then(data => {
+            console.log(data)
+            readContent(data, content => {
+                fileContent = content;    
+                renderPage();
+            });
+        }).catch(dbxUtil.handleError);
+    };
+
+    var renderPage = () => {
+        render(<FolderPage files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , '#/');
+    };
 }
 
 routie('access_token=*', (query)=>{
@@ -25,6 +42,15 @@ routie('access_token=*', (query)=>{
     storage.put('accessToken', token);
     routie('/')
 });
+
+function readContent(file, cb){
+    var reader = new FileReader();
+    reader.onload = function() {
+        cb(reader.result);
+    }
+    reader.readAsText(file.fileBlob);
+}
+
 
 // do this after all the routes have been set
 routie.reload();

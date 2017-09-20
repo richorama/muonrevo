@@ -11,6 +11,7 @@
   "dependencies": {
     "dropbox": "^2.5.7",
     "humanize-duration": "^3.10.0",
+    "marked": "^0.3.6",
     "react": "15.4.1",
     "react-dom": "15.4.1",
     "react-dropzone": "^3.8.0"
