@@ -14,7 +14,9 @@
     "marked": "^0.3.6",
     "react": "15.4.1",
     "react-dom": "15.4.1",
-    "react-dropzone": "^3.8.0"
+    "react-dropzone": "^3.8.0",
+    "react-monaco-editor": "^0.10.0",
+    "react-resize-aware-monaco": "^0.1.4"
   },
   "devDependencies": {
     "babel-preset-es2015": "^6.5.0",
