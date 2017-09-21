@@ -1,4 +1,5 @@
 var React = require('react');
+var ReactDOM = require('react-dom');
 var routie = require('./lib/routie');
 var Page = require('./components/page.jsx');
 var Panel = require('./components/panel.jsx');
@@ -7,6 +8,7 @@ var storage = require('./lib/storage');
 var dbxUtil = require('./lib/dbxUtils');
 var FolderPage = require('./components/folder-page.jsx');
 var EditPage = require('./components/edit-page.jsx');
+var UserPanel = require('./components/user-panel.jsx');
 
 routie('', home);
 routie('/', home);
@@ -69,6 +71,11 @@ function readContent(file, cb){
     reader.readAsText(file.fileBlob);
 }
 
+
+dbxUtil.on("user", user => {
+    console.log("callback", user)
+    ReactDOM.render(<UserPanel user={user} />, document.getElementById("user-content"));
+});
 
 // do this after all the routes have been set
 routie.reload();

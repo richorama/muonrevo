@@ -28,7 +28,7 @@ module.exports = React.createClass({
                         value={this.state.fileContent || ""}
                         theme="vs-dark"
                         language="markdown"
-                        options={{selectOnLineNumbers: true, lineNumbers:false}}
+                        options={{selectOnLineNumbers: true, lineNumbers:false, renderLineHighlight : "none", fontSize:18}}
                         onChange={this.handleChange} />
                 </div>
                 <div>
