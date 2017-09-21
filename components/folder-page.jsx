@@ -35,11 +35,14 @@ var FilePreview = React.createClass({
         return {__html: marked(this.props.fileContent || "")}; 
     },
     render:function(){
-        return <Panel title={<span><a href={`#/edit${this.props.file.path_lower}`} className="btn btn-primary btn-sm pull-right">Edit</a>{toDisplayName(this.props.file.name)}</span>}>
+        return <Panel title={toDisplayName(this.props.file.name)}>
             <div style={{overflow:"auto", height:"80vh"}}>
                 <If test={this.props.loading}>
                     <span>Loading...</span>
-                    <div  dangerouslySetInnerHTML={this.createMarkup()}></div>
+                    <div>
+                        <a href={`#/edit${this.props.file.path_lower}`} className="btn btn-primary btn-sm pull-right">Edit</a>
+                        <div  dangerouslySetInnerHTML={this.createMarkup()}></div>
+                    </div>
                 </If>
             </div>
         </Panel>

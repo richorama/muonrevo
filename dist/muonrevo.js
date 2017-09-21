@@ -319,16 +319,7 @@ var FilePreview = React.createClass({
     render: function render() {
         return React.createElement(
             Panel,
-            { title: React.createElement(
-                    'span',
-                    null,
-                    React.createElement(
-                        'a',
-                        { href: '#/edit' + this.props.file.path_lower, className: 'btn btn-primary btn-sm pull-right' },
-                        'Edit'
-                    ),
-                    toDisplayName(this.props.file.name)
-                ) },
+            { title: toDisplayName(this.props.file.name) },
             React.createElement(
                 'div',
                 { style: { overflow: "auto", height: "80vh" } },
@@ -340,7 +331,16 @@ var FilePreview = React.createClass({
                         null,
                         'Loading...'
                     ),
-                    React.createElement('div', { dangerouslySetInnerHTML: this.createMarkup() })
+                    React.createElement(
+                        'div',
+                        null,
+                        React.createElement(
+                            'a',
+                            { href: '#/edit' + this.props.file.path_lower, className: 'btn btn-primary btn-sm pull-right' },
+                            'Edit'
+                        ),
+                        React.createElement('div', { dangerouslySetInnerHTML: this.createMarkup() })
+                    )
                 )
             )
         );
