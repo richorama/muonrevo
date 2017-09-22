@@ -44,16 +44,30 @@ routie('/edit*', path => {
     render.loading();
     var dbx = dbxUtil.getDbx();
 
+    var save = value => {
+        dbx.filesUpload({
+            path : path,
+            contents : value,
+            mode : {".tag" : "update", update : rev},
+            autorename : true
+        }).then(x => {
+            routie('/')
+        })
+    };
+
     var fileContent;
+    var rev;
     dbx.filesDownload({path:path}).then(data => {
+        console.log(data);
         readContent(data, content => {
             fileContent = content;    
+            rev = data.rev;
             renderPage();
         });
     }).catch(dbxUtil.handleError);
 
     var renderPage = () => {
-        render(<EditPage fileContent={fileContent}  /> , '#/');
+        render(<EditPage fileContent={fileContent} onSave={save} /> , '#/');
     };
 });
 

@@ -193,13 +193,20 @@ var Monaco = require('react-monaco-editor').default;
 module.exports = React.createClass({
     displayName: 'exports',
 
+
     getInitialState: function getInitialState() {
         return {
             fileContent: this.props.fileContent
         };
     },
 
-    handleChange: function handleChange() {},
+    handleChange: function handleChange(value) {
+        this.setState({ fileContent: value });
+    },
+
+    handleSaveClick: function handleSaveClick() {
+        this.props.onSave(this.state.fileContent);
+    },
 
     render: function render() {
 
@@ -225,7 +232,7 @@ module.exports = React.createClass({
                     null,
                     React.createElement(
                         'a',
-                        { href: 'javascript:void(0);', className: 'btn btn-primary' },
+                        { href: 'javascript:void(0);', className: 'btn btn-primary', onClick: this.handleSaveClick },
                         'Save'
                     ),
                     ' ',
@@ -273,7 +280,7 @@ var Files = React.createClass({
                         null,
                         this.props.files.filter(function (x) {
                             return x[".tag"] === "file";
-                        }).map(function (file) {
+                        }).reverse().map(function (file) {
                             var style = "";
                             if (file === _this.props.selectedFile) {
                                 style = "active";
@@ -688,16 +695,30 @@ routie('/edit*', function (path) {
     render.loading();
     var dbx = dbxUtil.getDbx();
 
+    var save = function save(value) {
+        dbx.filesUpload({
+            path: path,
+            contents: value,
+            mode: { ".tag": "update", update: rev },
+            autorename: true
+        }).then(function (x) {
+            routie('/');
+        });
+    };
+
     var fileContent;
+    var rev;
     dbx.filesDownload({ path: path }).then(function (data) {
+        console.log(data);
         readContent(data, function (content) {
             fileContent = content;
+            rev = data.rev;
             renderPage();
         });
     }).catch(dbxUtil.handleError);
 
     var renderPage = function renderPage() {
-        render(React.createElement(EditPage, { fileContent: fileContent }), '#/');
+        render(React.createElement(EditPage, { fileContent: fileContent, onSave: save }), '#/');
     };
 });
 

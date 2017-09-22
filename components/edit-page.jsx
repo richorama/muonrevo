@@ -8,14 +8,19 @@ var Monaco = require('react-monaco-editor').default;
 
 
 module.exports = React.createClass({
+
     getInitialState:function(){
         return {
             fileContent : this.props.fileContent
         }
     },
 
-    handleChange : function(){
+    handleChange : function(value){
+        this.setState({fileContent : value})
+    },
 
+    handleSaveClick : function(){
+        this.props.onSave(this.state.fileContent);
     },
 
     render:function(){
@@ -32,7 +37,7 @@ module.exports = React.createClass({
                         onChange={this.handleChange} />
                 </div>
                 <div>
-                    <a href="javascript:void(0);" className="btn btn-primary" >Save</a> <a href="javascript:void(0);" className="btn btn-default" >Cancel</a>
+                    <a href="javascript:void(0);" className="btn btn-primary" onClick={this.handleSaveClick} >Save</a> <a href="javascript:void(0);" className="btn btn-default" >Cancel</a>
                 </div>
             </Panel>
         </Page>

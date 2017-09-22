@@ -9,7 +9,7 @@ var Files = React.createClass({
         return <Panel title="Entries" noPadding={true}>
             <div style={{overflow:"auto", height:"80vh"}}>
             <table className="table"><tbody>
-            {this.props.files.filter(x => x[".tag"] === "file").map(file => {
+            {this.props.files.filter(x => x[".tag"] === "file").reverse().map(file => {
                 var style = "";
                 if (file === this.props.selectedFile){
                     style = "active"
