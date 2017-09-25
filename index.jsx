@@ -12,22 +12,21 @@ var UserPanel = require('./components/user-panel.jsx');
 
 routie('', home);
 routie('/', home);
+routie('/path*', home);
 
-function home(){
+function home(path){
     render.loading();
 
     var filesData;  
     var fileContent;
     var dbx = dbxUtil.getDbx();
-    dbx.filesListFolder({path:''}).then(data => {
+    dbx.filesListFolder({path:path || ''}).then(data => {
         filesData = data;
         renderPage();
     }).catch(dbxUtil.handleError);
 
     var loadFile = (meta) => {
-        console.log(meta);
         dbx.filesDownload({path:meta.path_lower}).then(data => {
-            console.log(data)
             readContent(data, content => {
                 fileContent = content;    
                 renderPage();
@@ -35,8 +34,34 @@ function home(){
         }).catch(dbxUtil.handleError);
     };
 
+    
+
     var renderPage = () => {
-        render(<FolderPage files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , '#/');
+
+        var menu = [
+            {
+                name:"New Page",
+                path:"#/new-page/",
+                icon:"fa-file-text"
+            },
+            {
+                name:"New Folder",
+                path:"#/new-folder/",
+                icon:"fa-folder-open"
+            },
+            {
+                title:"Folders"
+            }
+        ];
+        filesData.entries.filter(x => x[".tag"] === "folder").reverse().forEach(x => {
+            menu.push({
+                name:x.name,
+                path:"#/path" + x.path_lower,
+                icon:"fa-folder"
+            });
+        })
+
+        render(<FolderPage files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu);
     };
 }
 
@@ -66,8 +91,10 @@ routie('/edit*', path => {
         });
     }).catch(dbxUtil.handleError);
 
+    var menu = [];
+
     var renderPage = () => {
-        render(<EditPage fileContent={fileContent} onSave={save} /> , '#/');
+        render(<EditPage fileContent={fileContent} onSave={save} /> , menu);
     };
 });
 

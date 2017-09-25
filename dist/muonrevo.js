@@ -476,6 +476,19 @@ var MenuSection = React.createClass({
     }
 });
 
+var HeaderSection = React.createClass({
+    displayName: "HeaderSection",
+
+    render: function render() {
+        var key = 0;
+        return React.createElement(
+            "li",
+            { className: "header" },
+            this.props.title
+        );
+    }
+});
+
 module.exports = React.createClass({
     displayName: "exports",
 
@@ -484,7 +497,11 @@ module.exports = React.createClass({
             "ul",
             { className: "sidebar-menu" },
             this.props.menu.map(function (x) {
-                return React.createElement(MenuSection, { active: x.active, icon: x.icon, name: x.name, path: x.path });
+                if (x.title) {
+                    return React.createElement(HeaderSection, { title: x.title });
+                } else {
+                    return React.createElement(MenuSection, { active: x.active, icon: x.icon, name: x.name, path: x.path });
+                }
             })
         );
     }
@@ -569,32 +586,14 @@ var Loading = require('./loading.jsx');
 var contentElement = document.getElementById('content');
 var menuElement = document.getElementById('menu');
 
-module.exports = function (jsx, path) {
-
+module.exports = function (jsx, menu) {
     ReactDom.render(jsx, contentElement);
-    var menu = getMenu();
-    menu.forEach(function (x) {
-        x.active = x.path === path;
-    });
-
     ReactDom.render(React.createElement(Menu, { menu: menu }), menuElement);
 };
 
 module.exports.loading = function () {
     ReactDom.render(React.createElement(Loading, null), contentElement);
 };
-
-function getMenu() {
-    return [{
-        name: "Home",
-        path: "#/",
-        icon: "fa-home"
-    }, {
-        name: "Settings",
-        path: "#/settings",
-        icon: "fa-cogs"
-    }];
-}
 
 },{"../lib/routie":13,"./loading.jsx":5,"./menu.jsx":6,"react":210,"react-dom":58}],10:[function(require,module,exports){
 "use strict";
@@ -663,22 +662,21 @@ var UserPanel = require('./components/user-panel.jsx');
 
 routie('', home);
 routie('/', home);
+routie('/path*', home);
 
-function home() {
+function home(path) {
     render.loading();
 
     var filesData;
     var fileContent;
     var dbx = dbxUtil.getDbx();
-    dbx.filesListFolder({ path: '' }).then(function (data) {
+    dbx.filesListFolder({ path: path || '' }).then(function (data) {
         filesData = data;
         renderPage();
     }).catch(dbxUtil.handleError);
 
     var loadFile = function loadFile(meta) {
-        console.log(meta);
         dbx.filesDownload({ path: meta.path_lower }).then(function (data) {
-            console.log(data);
             readContent(data, function (content) {
                 fileContent = content;
                 renderPage();
@@ -687,7 +685,29 @@ function home() {
     };
 
     var renderPage = function renderPage() {
-        render(React.createElement(FolderPage, { files: filesData.entries, fileContent: fileContent, loadFile: loadFile }), '#/');
+
+        var menu = [{
+            name: "New Page",
+            path: "#/new-page/",
+            icon: "fa-file-text"
+        }, {
+            name: "New Folder",
+            path: "#/new-folder/",
+            icon: "fa-folder-open"
+        }, {
+            title: "Folders"
+        }];
+        filesData.entries.filter(function (x) {
+            return x[".tag"] === "folder";
+        }).reverse().forEach(function (x) {
+            menu.push({
+                name: x.name,
+                path: "#/path" + x.path_lower,
+                icon: "fa-folder"
+            });
+        });
+
+        render(React.createElement(FolderPage, { files: filesData.entries, fileContent: fileContent, loadFile: loadFile }), menu);
     };
 }
 
@@ -717,8 +737,10 @@ routie('/edit*', function (path) {
         });
     }).catch(dbxUtil.handleError);
 
+    var menu = [];
+
     var renderPage = function renderPage() {
-        render(React.createElement(EditPage, { fileContent: fileContent, onSave: save }), '#/');
+        render(React.createElement(EditPage, { fileContent: fileContent, onSave: save }), menu);
     };
 });
 
