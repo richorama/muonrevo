@@ -5,8 +5,6 @@ var If = require('./if-else.jsx');
 var marked = require('marked');
 var Monaco = require('react-monaco-editor').default;
 
-
-
 module.exports = React.createClass({
 
     getInitialState:function(){
@@ -17,6 +15,10 @@ module.exports = React.createClass({
 
     handleChange : function(value){
         this.setState({fileContent : value})
+    },
+
+    handleTitleChange:function(){
+        console.log(arguments);
     },
 
     handleSaveClick : function(){
@@ -30,8 +32,13 @@ module.exports = React.createClass({
     render:function(){
         
         return <Page>
-            <Panel title="Edit">
+            <Panel title="Add a new entry">
                 <div>
+
+                    <div>
+                        <input style={{marginBottom:"10px"}} className="form-control input-lg" type="text" placeholder="Enter a title..." value={this.state.title} onChange={this.handleTitleChange} />
+                    </div>
+
                     <Monaco
                         height="500"
                         value={this.state.fileContent || ""}

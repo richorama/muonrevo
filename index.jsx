@@ -9,6 +9,7 @@ var dbxUtil = require('./lib/dbxUtils');
 var FolderPage = require('./components/folder-page.jsx');
 var EditPage = require('./components/edit-page.jsx');
 var UserPanel = require('./components/user-panel.jsx');
+var NewPage = require('./components/new-page.jsx');
 
 routie('', home);
 routie('/', home);
@@ -41,18 +42,30 @@ function home(path){
         var menu = [
             {
                 name:"New Page",
-                path:"#/new-page/",
+                path:"#/new-page" + path,
                 icon:"fa-file-text"
             },
             {
                 name:"New Folder",
-                path:"#/new-folder/",
+                path:"#/new-folder" + path,
                 icon:"fa-folder-open"
             },
             {
                 title:"Folders"
             }
         ];
+
+        if (path){
+            var pathParts = path.split('/');
+            pathParts.pop();
+            var parentPath = pathParts.join('/');
+            menu.push({
+                name: "Parent Folder",
+                path:"#/path" + parentPath,
+                icon:"fa-level-up"
+            })
+        }
+
         filesData.entries.filter(x => x[".tag"] === "folder").reverse().forEach(x => {
             menu.push({
                 name:x.name,
@@ -96,6 +109,11 @@ routie('/edit*', path => {
     var renderPage = () => {
         render(<EditPage fileContent={fileContent} onSave={save} /> , menu);
     };
+});
+
+routie('/new-page*', (path) => {
+    var menu = [];
+    render(<NewPage/>, menu);
 });
 
 routie('access_token=*', (query)=>{
