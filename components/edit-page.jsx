@@ -9,39 +9,22 @@ var Monaco = require('react-monaco-editor').default;
 
 module.exports = React.createClass({
 
-    getInitialState:function(){
-        return {
-            fileContent : this.props.fileContent
-        }
-    },
-
     handleChange : function(value){
-        this.setState({fileContent : value})
-    },
-
-    handleSaveClick : function(){
-        this.props.onSave(this.state.fileContent);
-    },
-
-    handleCancel : function(){
-        window.history.back();
+        this.props.onUpdate({content : value});
     },
 
     render:function(){
         
         return <Page>
-            <Panel title="Edit">
+            <Panel title={this.props.fileName}>
                 <div>
                     <Monaco
                         height="500"
-                        value={this.state.fileContent || ""}
+                        value={this.props.fileContent || ""}
                         theme="vs-dark"
                         language="markdown"
                         options={{selectOnLineNumbers: true, lineNumbers:false, renderLineHighlight : "none", fontSize:18}}
                         onChange={this.handleChange} />
-                </div>
-                <div>
-                    <a href="javascript:void(0);" className="btn btn-primary" onClick={this.handleSaveClick} >Save</a> <a href="javascript:void(0);" className="btn btn-default" onClick={this.handleCancel} >Cancel</a>
                 </div>
             </Panel>
         </Page>

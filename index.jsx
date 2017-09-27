@@ -10,6 +10,7 @@ var FolderPage = require('./components/folder-page.jsx');
 var EditPage = require('./components/edit-page.jsx');
 var UserPanel = require('./components/user-panel.jsx');
 var NewPage = require('./components/new-page.jsx');
+var PreviewPage = require('./components/preview-page.jsx');
 
 routie('', home);
 routie('/', home);
@@ -49,11 +50,14 @@ function home(path){
                 name:"New Folder",
                 path:"#/new-folder" + path,
                 icon:"fa-folder-open"
-            },
-            {
-                title:"Folders"
             }
         ];
+
+        if (path || filesData.entries.filter(x => x[".tag"] === "folder").length){
+            menu.push({
+                title:"FOLDERS"
+            });
+        }
 
         if (path){
             var pathParts = path.split('/');
@@ -82,10 +86,12 @@ routie('/edit*', path => {
     render.loading();
     var dbx = dbxUtil.getDbx();
 
-    var save = value => {
+    var editMode = true;
+    var fileName;
+    var save = () => {
         dbx.filesUpload({
             path : path,
-            contents : value,
+            contents : fileContent,
             mode : {".tag" : "update", update : rev},
             autorename : true
         }).then(x => {
@@ -96,23 +102,72 @@ routie('/edit*', path => {
     var fileContent;
     var rev;
     dbx.filesDownload({path:path}).then(data => {
-        console.log(data);
         readContent(data, content => {
             fileContent = content;    
+            fileName = data.name;
             rev = data.rev;
             renderPage();
         });
     }).catch(dbxUtil.handleError);
 
-    var menu = [];
-
     var renderPage = () => {
-        render(<EditPage fileContent={fileContent} onSave={save} /> , menu);
+
+        var menu = [
+            {
+                name:"Save",
+                onClick: save,
+                icon:"fa-save"
+            },
+            {
+                name:"Cancel",
+                onClick:_=> window.history.back(),
+                icon:"fa-times"
+            },
+            {
+                title:"VIEW"
+            },
+            {
+                name: "Edit",
+                onClick:_=> {
+                    editMode = true;
+                    renderPage();
+                },
+                icon:"fa-edit",
+                active : editMode 
+            },
+            {
+                name: "Preview",
+                onClick:_=> {
+                    editMode = false;
+                    renderPage();
+                },
+                icon:"fa-eye",
+                active : !editMode
+            }
+        ];
+
+        if (editMode){
+            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => fileContent = newValue.content} /> , menu);
+        } else {
+            render(<PreviewPage fileContent={fileContent} fileName={fileName} /> , menu);
+        }
+        
     };
 });
 
 routie('/new-page*', (path) => {
-    var menu = [];
+    var menu = [
+        {
+            name:"Save",
+            onClick:_=>console.log,
+            icon:"fa-save"
+        },
+        {
+            name:"Cancel",
+            onClick:_=> window.history.back(),
+            icon:"fa-times"
+        }
+    ];
     render(<NewPage/>, menu);
 });
 
