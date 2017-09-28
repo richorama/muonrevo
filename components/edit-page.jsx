@@ -16,7 +16,7 @@ module.exports = React.createClass({
     render:function(){
         
         return <Page>
-            <Panel title={this.props.fileName}>
+            <Panel title={toDisplayName(this.props.fileName)}>
                 <div>
                     <Monaco
                         height="500"

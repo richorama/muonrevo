@@ -43,12 +43,12 @@ function home(path){
         var menu = [
             {
                 name:"New Page",
-                path:"#/new-page" + path,
+                path:"#/new-page" + path || "",
                 icon:"fa-file-text"
             },
             {
                 name:"New Folder",
-                path:"#/new-folder" + path,
+                path:"#/new-folder" + path || "",
                 icon:"fa-folder-open"
             }
         ];
@@ -156,19 +156,70 @@ routie('/edit*', path => {
 });
 
 routie('/new-page*', (path) => {
-    var menu = [
-        {
-            name:"Save",
-            onClick:_=>console.log,
-            icon:"fa-save"
-        },
-        {
-            name:"Cancel",
-            onClick:_=> window.history.back(),
-            icon:"fa-times"
+    var dbx = dbxUtil.getDbx();
+
+    var save = () => {
+        dbx.filesUpload({
+            path : `${path || ""}/${state.title}.md`,
+            contents : state.content,
+            mode : {".tag" : "add"},
+            autorename : true
+        }).then(x => {
+            routie(`/path${path}`);
+        })
+    }
+    var state = {
+        content : "",
+        title : ""
+    };
+    var editMode = true;
+
+    var renderPage = () => {
+
+        var menu = [
+            {
+                name:"Save",
+                onClick:save,
+                icon:"fa-save"
+            },
+            {
+                name:"Cancel",
+                href: `#/path${path}`,
+                icon:"fa-times"
+            },
+            {
+                title:"VIEW"
+            },
+            {
+                name: "Edit",
+                onClick:_=> {
+                    editMode = true;
+                    renderPage();
+                },
+                icon:"fa-edit",
+                active : editMode 
+            },
+            {
+                name: "Preview",
+                onClick:_=> {
+                    editMode = false;
+                    renderPage();
+                },
+                icon:"fa-eye",
+                active : !editMode
+            }
+        ];
+
+        
+        if (editMode){
+            render(<NewPage onUpdate={newState => state = newState} fileContent={state.content} title={state.title} />, menu);
+        } else {
+            render(<PreviewPage fileContent={state.content} fileName={state.title} /> , menu);
         }
-    ];
-    render(<NewPage/>, menu);
+    }
+
+    renderPage();
+    
 });
 
 routie('access_token=*', (query)=>{

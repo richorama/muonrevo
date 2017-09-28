@@ -205,7 +205,7 @@ module.exports = React.createClass({
             null,
             React.createElement(
                 Panel,
-                { title: this.props.fileName },
+                { title: toDisplayName(this.props.fileName) },
                 React.createElement(
                     'div',
                     null,
@@ -517,24 +517,21 @@ module.exports = React.createClass({
 
     getInitialState: function getInitialState() {
         return {
-            fileContent: this.props.fileContent
+            title: this.props.title || "",
+            content: this.props.fileContent || ""
         };
     },
 
+    updateParent: function updateParent() {
+        this.props.onUpdate(this.state);
+    },
+
     handleChange: function handleChange(value) {
-        this.setState({ fileContent: value });
+        this.setState({ content: value }, this.updateParent);
     },
 
     handleTitleChange: function handleTitleChange() {
-        console.log(arguments);
-    },
-
-    handleSaveClick: function handleSaveClick() {
-        this.props.onSave(this.state.fileContent);
-    },
-
-    handleCancel: function handleCancel() {
-        window.history.back();
+        this.setState({ title: this.refs.title.value }, this.updateParent);
     },
 
     render: function render() {
@@ -551,30 +548,15 @@ module.exports = React.createClass({
                     React.createElement(
                         'div',
                         null,
-                        React.createElement('input', { style: { marginBottom: "10px" }, className: 'form-control input-lg', type: 'text', placeholder: 'Enter a title...', value: this.state.title, onChange: this.handleTitleChange })
+                        React.createElement('input', { style: { marginBottom: "10px" }, className: 'form-control input-lg', type: 'text', placeholder: 'Enter a title...', value: this.state.title, onChange: this.handleTitleChange, ref: 'title' })
                     ),
                     React.createElement(Monaco, {
                         height: '500',
-                        value: this.state.fileContent || "",
+                        value: this.state.content || "",
                         theme: 'vs-dark',
                         language: 'markdown',
                         options: { selectOnLineNumbers: true, lineNumbers: false, renderLineHighlight: "none", fontSize: 18 },
                         onChange: this.handleChange })
-                ),
-                React.createElement(
-                    'div',
-                    null,
-                    React.createElement(
-                        'a',
-                        { href: 'javascript:void(0);', className: 'btn btn-primary', onClick: this.handleSaveClick },
-                        'Save'
-                    ),
-                    ' ',
-                    React.createElement(
-                        'a',
-                        { href: 'javascript:void(0);', className: 'btn btn-default', onClick: this.handleCancel },
-                        'Cancel'
-                    )
                 )
             )
         );
@@ -805,11 +787,11 @@ function home(path) {
 
         var menu = [{
             name: "New Page",
-            path: "#/new-page" + path,
+            path: "#/new-page" + path || "",
             icon: "fa-file-text"
         }, {
             name: "New Folder",
-            path: "#/new-folder" + path,
+            path: "#/new-folder" + path || "",
             icon: "fa-folder-open"
         }];
 
@@ -917,20 +899,64 @@ routie('/edit*', function (path) {
 });
 
 routie('/new-page*', function (path) {
-    var menu = [{
-        name: "Save",
-        onClick: function onClick(_) {
-            return console.log;
-        },
-        icon: "fa-save"
-    }, {
-        name: "Cancel",
-        onClick: function onClick(_) {
-            return window.history.back();
-        },
-        icon: "fa-times"
-    }];
-    render(React.createElement(NewPage, null), menu);
+    var dbx = dbxUtil.getDbx();
+
+    var save = function save() {
+        dbx.filesUpload({
+            path: (path || "") + '/' + state.title + '.md',
+            contents: state.content,
+            mode: { ".tag": "add" },
+            autorename: true
+        }).then(function (x) {
+            routie('/path' + path);
+        });
+    };
+    var state = {
+        content: "",
+        title: ""
+    };
+    var editMode = true;
+
+    var renderPage = function renderPage() {
+
+        var menu = [{
+            name: "Save",
+            onClick: save,
+            icon: "fa-save"
+        }, {
+            name: "Cancel",
+            href: '#/path' + path,
+            icon: "fa-times"
+        }, {
+            title: "VIEW"
+        }, {
+            name: "Edit",
+            onClick: function onClick(_) {
+                editMode = true;
+                renderPage();
+            },
+            icon: "fa-edit",
+            active: editMode
+        }, {
+            name: "Preview",
+            onClick: function onClick(_) {
+                editMode = false;
+                renderPage();
+            },
+            icon: "fa-eye",
+            active: !editMode
+        }];
+
+        if (editMode) {
+            render(React.createElement(NewPage, { onUpdate: function onUpdate(newState) {
+                    return state = newState;
+                }, fileContent: state.content, title: state.title }), menu);
+        } else {
+            render(React.createElement(PreviewPage, { fileContent: state.content, fileName: state.title }), menu);
+        }
+    };
+
+    renderPage();
 });
 
 routie('access_token=*', function (query) {

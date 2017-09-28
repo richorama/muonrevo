@@ -9,24 +9,21 @@ module.exports = React.createClass({
 
     getInitialState:function(){
         return {
-            fileContent : this.props.fileContent
+            title : this.props.title || "",
+            content : this.props.fileContent || ""
         }
     },
 
+    updateParent:function(){
+        this.props.onUpdate(this.state)
+    },
+
     handleChange : function(value){
-        this.setState({fileContent : value})
+        this.setState({content : value}, this.updateParent)
     },
 
     handleTitleChange:function(){
-        console.log(arguments);
-    },
-
-    handleSaveClick : function(){
-        this.props.onSave(this.state.fileContent);
-    },
-
-    handleCancel : function(){
-        window.history.back();
+        this.setState({title:this.refs.title.value}, this.updateParent);
     },
 
     render:function(){
@@ -36,19 +33,16 @@ module.exports = React.createClass({
                 <div>
 
                     <div>
-                        <input style={{marginBottom:"10px"}} className="form-control input-lg" type="text" placeholder="Enter a title..." value={this.state.title} onChange={this.handleTitleChange} />
+                        <input style={{marginBottom:"10px"}} className="form-control input-lg" type="text" placeholder="Enter a title..." value={this.state.title} onChange={this.handleTitleChange} ref="title" />
                     </div>
 
                     <Monaco
                         height="500"
-                        value={this.state.fileContent || ""}
+                        value={this.state.content || ""}
                         theme="vs-dark"
                         language="markdown"
                         options={{selectOnLineNumbers: true, lineNumbers:false, renderLineHighlight : "none", fontSize:18}}
                         onChange={this.handleChange} />
-                </div>
-                <div>
-                    <a href="javascript:void(0);" className="btn btn-primary" onClick={this.handleSaveClick} >Save</a> <a href="javascript:void(0);" className="btn btn-default" onClick={this.handleCancel} >Cancel</a>
                 </div>
             </Panel>
         </Page>
