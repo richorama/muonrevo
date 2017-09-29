@@ -19,7 +19,7 @@ var Files = React.createClass({
                 return <tr key={file.id} className={style} ><td>
                     <a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
                         <strong>{toDisplayName(file.name)}</strong>
-                        <p className="text-muted">{file.client_modified}</p>
+                        <p className="text-muted">{prettyDate(file.client_modified)}</p>
                     </a>
                 </td></tr>
             })}
@@ -103,3 +103,10 @@ module.exports = React.createClass({
 function toDisplayName(value){
     return (value || "").replace(".md", "");
 }
+
+function prettyDate(value){
+    const parts = value.split('T');
+    const hourParts = parts[1].split('.')[0].split(':');
+    return `${parts[0]} ${hourParts[0]}:${hourParts[1]}`
+  }
+  

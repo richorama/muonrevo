@@ -12,6 +12,7 @@ var UserPanel = require('./components/user-panel.jsx');
 var NewPage = require('./components/new-page.jsx');
 var PreviewPage = require('./components/preview-page.jsx');
 var ConfirmDeletePage = require('./components/confirm-delete-page.jsx');
+var NewFolderPage = require('./components/new-folder-page.jsx');
 
 
 routie('', home);
@@ -243,6 +244,33 @@ routie('/new-page*', (path) => {
     
 });
 
+routie('/new-folder*', path => {
+    var dbx = dbxUtil.getDbx();
+    var name = ""
+    var createFolder = () => {
+        dbx.filesCreateFolderV2({path:`${path}/${name}`}).then(() => {
+            routie(`/path${path}/${name}`);
+        });
+    };
+    var handleUpdate = newValue => {
+        name = newValue.title;
+    };
+
+    var menu = [
+        {
+            name:"Create",
+            onClick:createFolder,
+            icon:"fa-save"
+        },
+        {
+            name:"Cancel",
+            path: `#/path${path || ""}`,
+            icon:"fa-times"
+        }
+    ];
+
+    render(<NewFolderPage path={path} onUpdate={handleUpdate} />, menu);
+});
 
 routie('/delete*', path => {
     var dbx = dbxUtil.getDbx();
