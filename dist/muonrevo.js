@@ -875,11 +875,11 @@ function home(path) {
 
         var menu = [{
             name: "New Entry",
-            path: "#/new-page" + path || "",
+            path: "#/new-page" + (path || ""),
             icon: "fa-file-text"
         }, {
             name: "New Folder",
-            path: "#/new-folder" + path || "",
+            path: "#/new-folder" + (path || ""),
             icon: "fa-folder-open"
         }];
 
@@ -1027,7 +1027,7 @@ routie('/new-page*', function (path) {
             icon: "fa-save"
         }, {
             name: "Cancel",
-            path: '#/path' + path,
+            path: '#/path' + (path || ""),
             icon: "fa-times"
         }, {
             title: "VIEW"
@@ -1077,7 +1077,7 @@ routie('/delete*', function (path) {
         icon: "fa-save"
     }, {
         name: "Cancel",
-        path: '#/edit' + path,
+        path: '#/edit' + (path || ""),
         icon: "fa-times"
     }];
 
