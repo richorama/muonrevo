@@ -8,7 +8,7 @@ var Loading = require('./loading.jsx');
 var Files = React.createClass({
     render:function(){
         return <Panel title="Entries" noPadding={true}>
-            <div style={{overflow:"auto", height:"80vh"}}>
+            <div style={{overflow:"auto", height:this.props.height}}>
             <table className="table"><tbody>
             {this.props.files.filter(x => x[".tag"] === "file").reverse().map(file => {
                 var style = "";
@@ -36,8 +36,8 @@ var FilePreview = React.createClass({
         return {__html: marked(this.props.fileContent || "")}; 
     },
     render:function(){
-        return <Panel title={toDisplayName(this.props.file.name)}>
-            <div style={{overflow:"auto", height:"80vh"}}>
+        return <Panel title={toDisplayName(this.props.file.name)} noPadding={true}>
+            <div style={{overflow:"auto", height:this.props.height, padding:"20px"}}>
                 <If test={this.props.loading}>
                     <Loading/>
                     <div dangerouslySetInnerHTML={this.createMarkup()}></div>
@@ -74,10 +74,17 @@ module.exports = React.createClass({
     },
 
     render:function(){
+
+        var height = "calc(100vh - 150px)";
+        if (this.props.path){
+            height = "calc(100vh - 220px)"
+        }
+
         return <Page path={this.props.path}>
             <div className="row">
                 <div className="col-md-3">
                     <Files 
+                        height={height}
                         files={this.props.files} 
                         onClick={this.onClick} 
                         selectedFile={this.state.selectedFile} />
@@ -85,7 +92,7 @@ module.exports = React.createClass({
                 </div>
                 <div className="col-md-9">
                     <If test={this.state.selectedFile}>
-                        <FilePreview file={this.state.selectedFile}  loading={this.state.loading} fileContent={this.state.fileContent} />     
+                        <FilePreview height={height} file={this.state.selectedFile}  loading={this.state.loading} fileContent={this.state.fileContent} />     
                     </If>
                 </div>
             </div>

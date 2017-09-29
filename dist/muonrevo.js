@@ -243,12 +243,12 @@ module.exports = React.createClass({
             null,
             React.createElement(
                 Panel,
-                { title: toDisplayName(this.props.fileName) },
+                { title: toDisplayName(this.props.fileName), noPadding: true },
                 React.createElement(
                     'div',
                     null,
                     React.createElement(Monaco, {
-                        height: '500',
+                        height: window.innerHeight - 160,
                         value: this.props.fileContent || "",
                         theme: 'vs-dark',
                         language: 'markdown',
@@ -285,7 +285,7 @@ var Files = React.createClass({
             { title: 'Entries', noPadding: true },
             React.createElement(
                 'div',
-                { style: { overflow: "auto", height: "80vh" } },
+                { style: { overflow: "auto", height: this.props.height } },
                 React.createElement(
                     'table',
                     { className: 'table' },
@@ -340,10 +340,10 @@ var FilePreview = React.createClass({
     render: function render() {
         return React.createElement(
             Panel,
-            { title: toDisplayName(this.props.file.name) },
+            { title: toDisplayName(this.props.file.name), noPadding: true },
             React.createElement(
                 'div',
-                { style: { overflow: "auto", height: "80vh" } },
+                { style: { overflow: "auto", height: this.props.height, padding: "20px" } },
                 React.createElement(
                     If,
                     { test: this.props.loading },
@@ -383,6 +383,12 @@ module.exports = React.createClass({
     },
 
     render: function render() {
+
+        var height = "calc(100vh - 150px)";
+        if (this.props.path) {
+            height = "calc(100vh - 220px)";
+        }
+
         return React.createElement(
             Page,
             { path: this.props.path },
@@ -393,6 +399,7 @@ module.exports = React.createClass({
                     'div',
                     { className: 'col-md-3' },
                     React.createElement(Files, {
+                        height: height,
                         files: this.props.files,
                         onClick: this.onClick,
                         selectedFile: this.state.selectedFile })
@@ -403,7 +410,7 @@ module.exports = React.createClass({
                     React.createElement(
                         If,
                         { test: this.state.selectedFile },
-                        React.createElement(FilePreview, { file: this.state.selectedFile, loading: this.state.loading, fileContent: this.state.fileContent })
+                        React.createElement(FilePreview, { height: height, file: this.state.selectedFile, loading: this.state.loading, fileContent: this.state.fileContent })
                     )
                 )
             )
@@ -567,17 +574,17 @@ module.exports = React.createClass({
             null,
             React.createElement(
                 Panel,
-                { title: 'Add a new entry' },
+                { title: 'Add a new entry', noPadding: true },
                 React.createElement(
                     'div',
                     null,
                     React.createElement(
                         'div',
                         null,
-                        React.createElement('input', { style: { marginBottom: "10px" }, className: 'form-control input-lg', type: 'text', placeholder: 'Enter a title...', value: this.state.title, onChange: this.handleTitleChange, ref: 'title' })
+                        React.createElement('input', { className: 'form-control input-lg', type: 'text', placeholder: 'Enter a title...', value: this.state.title, onChange: this.handleTitleChange, ref: 'title' })
                     ),
                     React.createElement(Monaco, {
-                        height: '500',
+                        height: window.innerHeight - 200,
                         value: this.state.content || "",
                         theme: 'vs-dark',
                         language: 'markdown',
@@ -741,10 +748,10 @@ module.exports = React.createClass({
             null,
             React.createElement(
                 Panel,
-                { title: toDisplayName(this.props.fileName) },
+                { title: toDisplayName(this.props.fileName), noPadding: true },
                 React.createElement(
                     'div',
-                    { style: { overflow: "auto", height: "80vh" } },
+                    { style: { overflow: "auto", height: "calc(100vh - 150px)", margin: "20px" } },
                     React.createElement('div', { dangerouslySetInnerHTML: this.createMarkup() })
                 )
             )

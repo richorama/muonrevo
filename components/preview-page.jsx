@@ -11,8 +11,8 @@ module.exports = React.createClass({
 
     render:function(){
         return <Page>
-            <Panel title={toDisplayName(this.props.fileName)}>
-                <div style={{overflow:"auto", height:"80vh"}}>
+            <Panel title={toDisplayName(this.props.fileName)} noPadding={true}>
+                <div style={{overflow:"auto", height:"calc(100vh - 150px)", margin:"20px"}}>
                     <div dangerouslySetInnerHTML={this.createMarkup()}></div>
                 </div>
             </Panel>

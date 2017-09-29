@@ -29,15 +29,15 @@ module.exports = React.createClass({
     render:function(){
         
         return <Page>
-            <Panel title="Add a new entry">
+            <Panel title="Add a new entry" noPadding={true}>
                 <div>
 
                     <div>
-                        <input style={{marginBottom:"10px"}} className="form-control input-lg" type="text" placeholder="Enter a title..." value={this.state.title} onChange={this.handleTitleChange} ref="title" />
+                        <input className="form-control input-lg" type="text" placeholder="Enter a title..." value={this.state.title} onChange={this.handleTitleChange} ref="title" />
                     </div>
 
                     <Monaco
-                        height="500"
+                        height={window.innerHeight - 200}
                         value={this.state.content || ""}
                         theme="vs-dark"
                         language="markdown"

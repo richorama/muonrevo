@@ -16,10 +16,10 @@ module.exports = React.createClass({
     render:function(){
         
         return <Page>
-            <Panel title={toDisplayName(this.props.fileName)}>
+            <Panel title={toDisplayName(this.props.fileName)} noPadding={true}>
                 <div>
                     <Monaco
-                        height="500"
+                        height={window.innerHeight - 160}
                         value={this.props.fileContent || ""}
                         theme="vs-dark"
                         language="markdown"
