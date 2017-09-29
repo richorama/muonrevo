@@ -11,6 +11,8 @@ var EditPage = require('./components/edit-page.jsx');
 var UserPanel = require('./components/user-panel.jsx');
 var NewPage = require('./components/new-page.jsx');
 var PreviewPage = require('./components/preview-page.jsx');
+var ConfirmDeletePage = require('./components/confirm-delete-page.jsx');
+
 
 routie('', home);
 routie('/', home);
@@ -19,6 +21,7 @@ routie('/path*', home);
 function home(path){
     render.loading();
 
+    var selectedFile;
     var filesData;  
     var fileContent;
     var dbx = dbxUtil.getDbx();
@@ -28,6 +31,7 @@ function home(path){
     }).catch(dbxUtil.handleError);
 
     var loadFile = (meta) => {
+        selectedFile = meta;
         dbx.filesDownload({path:meta.path_lower}).then(data => {
             readContent(data, content => {
                 fileContent = content;    
@@ -36,13 +40,12 @@ function home(path){
         }).catch(dbxUtil.handleError);
     };
 
-    
-
+  
     var renderPage = () => {
 
         var menu = [
             {
-                name:"New Page",
+                name:"New Entry",
                 path:"#/new-page" + path || "",
                 icon:"fa-file-text"
             },
@@ -53,6 +56,18 @@ function home(path){
             }
         ];
 
+        if (selectedFile){
+            menu.push({
+                title:"ENTRY"
+            });
+                        
+            menu.push({
+                name: "Edit",
+                path:"#/edit" + selectedFile.path_lower,
+                icon:"fa-pencil-square-o"
+            });
+        }
+
         if (path || filesData.entries.filter(x => x[".tag"] === "folder").length){
             menu.push({
                 title:"FOLDERS"
@@ -60,12 +75,10 @@ function home(path){
         }
 
         if (path){
-            var pathParts = path.split('/');
-            pathParts.pop();
-            var parentPath = pathParts.join('/');
+            
             menu.push({
                 name: "Parent Folder",
-                path:"#/path" + parentPath,
+                path:"#/path" + getParent(path),
                 icon:"fa-level-up"
             })
         }
@@ -78,7 +91,7 @@ function home(path){
             });
         })
 
-        render(<FolderPage files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu);
+        render(<FolderPage path={path} files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu);
     };
 }
 
@@ -120,7 +133,7 @@ routie('/edit*', path => {
             },
             {
                 name:"Cancel",
-                onClick:_=> window.history.back(),
+                path:`#/path${getParent(path)}`,
                 icon:"fa-times"
             },
             {
@@ -143,6 +156,14 @@ routie('/edit*', path => {
                 },
                 icon:"fa-eye",
                 active : !editMode
+            },
+            {
+                title:"DANGER"
+            },
+            {
+                name:"Delete",
+                path: `#/delete${path}`,
+                icon:"fa-trash"
             }
         ];
 
@@ -184,7 +205,7 @@ routie('/new-page*', (path) => {
             },
             {
                 name:"Cancel",
-                href: `#/path${path}`,
+                path: `#/path${path}`,
                 icon:"fa-times"
             },
             {
@@ -222,6 +243,34 @@ routie('/new-page*', (path) => {
     
 });
 
+
+routie('/delete*', path => {
+    var dbx = dbxUtil.getDbx();
+
+    var deleteFile = () => {
+        render.loading();
+        dbx.filesDelete({path:path}).then(() => {
+            routie(`/path${getParent(path)}`);
+        })
+    };
+
+    var menu = [
+        {
+            name:"Delete",
+            onClick:deleteFile,
+            icon:"fa-save"
+        },
+        {
+            name:"Cancel",
+            path: `#/edit${path}`,
+            icon:"fa-times"
+        }
+    ];
+
+    render(<ConfirmDeletePage path={path} />, menu)
+
+});
+
 routie('access_token=*', (query)=>{
     var token = query.split('&')[0];
     storage.put('accessToken', token);
@@ -236,6 +285,11 @@ function readContent(file, cb){
     reader.readAsText(file.fileBlob);
 }
 
+function getParent(path){
+    var pathParts = path.split('/');
+    pathParts.pop();
+    return pathParts.join('/');
+}
 
 dbxUtil.on("user", user => {
     console.log("callback", user)

@@ -3,6 +3,7 @@ var Page = require('./page.jsx');
 var Panel = require('./panel.jsx');
 var If = require('./if-else.jsx');
 var marked = require('marked');
+var Loading = require('./loading.jsx');
 
 var Files = React.createClass({
     render:function(){
@@ -38,11 +39,8 @@ var FilePreview = React.createClass({
         return <Panel title={toDisplayName(this.props.file.name)}>
             <div style={{overflow:"auto", height:"80vh"}}>
                 <If test={this.props.loading}>
-                    <span>Loading...</span>
-                    <div>
-                        <a href={`#/edit${this.props.file.path_lower}`} className="btn btn-primary btn-sm pull-right">Edit</a>
-                        <div  dangerouslySetInnerHTML={this.createMarkup()}></div>
-                    </div>
+                    <Loading/>
+                    <div dangerouslySetInnerHTML={this.createMarkup()}></div>
                 </If>
             </div>
         </Panel>
@@ -76,7 +74,7 @@ module.exports = React.createClass({
     },
 
     render:function(){
-        return <Page>
+        return <Page path={this.props.path}>
             <div className="row">
                 <div className="col-md-3">
                     <Files 
