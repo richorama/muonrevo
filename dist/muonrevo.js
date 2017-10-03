@@ -1263,7 +1263,7 @@ routie('/new-page*', function (path) {
         });
     };
     var state = {
-        content: "",
+        content: "Enter your notes here...",
         title: ""
     };
     var editMode = true;
