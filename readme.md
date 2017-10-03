@@ -6,7 +6,7 @@ Markdown based note taking software, backed by dropbox.
 
 ## How it works
 
-The app is based entirely in the browser, and can be served from any static web host.
+The app is based entirely in the browser, and can be served from any static web host (although you'll have to set up your own dropbox app if you want to host it on your own domain).
 
 When you first visit the site you will be asked to authenticate with dropbox. 
 
