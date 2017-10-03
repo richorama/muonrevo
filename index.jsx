@@ -14,7 +14,7 @@ var PreviewPage = require('./components/preview-page.jsx');
 var ConfirmDeletePage = require('./components/confirm-delete-page.jsx');
 var NewFolderPage = require('./components/new-folder-page.jsx');
 var Settings = require('./components/settings-page.jsx');
-
+var ConfirmRefirectPage = require('./components/confirm-redirect-page.jsx');
 
 routie('', home);
 routie('/', home);
@@ -323,13 +323,16 @@ routie('/settings', () => {
         }
     ];
 
-
-
     var handleUpdate = newState => {
         state = newState;
     }
 
     render(<Settings onUpdate={handleUpdate} />, menu)
+});
+
+routie('/login', ()=>{
+    var url = dbxUtil.getLoginUrl();
+    render(<ConfirmRefirectPage url={url} />, []);
 });
 
 routie('access_token=*', (query)=>{
@@ -353,7 +356,6 @@ function getParent(path){
 }
 
 dbxUtil.on("user", user => {
-    console.log("callback", user)
     ReactDOM.render(<UserPanel user={user} />, document.getElementById("user-content"));
 });
 
