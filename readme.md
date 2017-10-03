@@ -1,6 +1,6 @@
 ![](screenshot.png)
 
-# MuonRev
+# MuonRevo
 
 Markdown based note taking software, backed by dropbox.
 
