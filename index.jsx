@@ -15,6 +15,7 @@ var ConfirmDeletePage = require('./components/confirm-delete-page.jsx');
 var NewFolderPage = require('./components/new-folder-page.jsx');
 var Settings = require('./components/settings-page.jsx');
 var ConfirmRefirectPage = require('./components/confirm-redirect-page.jsx');
+var HistoryPage = require('./components/history-page.jsx');
 
 routie('', home);
 routie('/', home);
@@ -101,7 +102,8 @@ routie('/edit*', path => {
     render.loading();
     var dbx = dbxUtil.getDbx();
 
-    var editMode = true;
+    var mode = "edit";
+    var revisions;
     var fileName;
     var save = () => {
         dbx.filesUpload({
@@ -115,15 +117,48 @@ routie('/edit*', path => {
     };
 
     var fileContent;
+    var revisionContent;
+    var revisionRev;
     var rev;
-    dbx.filesDownload({path:path}).then(data => {
-        readContent(data, content => {
-            fileContent = content;    
-            fileName = data.name;
-            rev = data.rev;
+    var loadContent = () => {
+        dbx.filesDownload({path:path}).then(data => {
+            readContent(data, content => {
+                fileContent = content;    
+                fileName = data.name;
+                rev = data.rev;
+                renderPage();
+            });
+        }).catch(dbxUtil.handleError);
+    };
+    loadContent();
+
+    var loadRevisions = () => {
+        dbx.filesListRevisions({path:path}).then(revs => {
+            revisions = revs.entries;
             renderPage();
         });
-    }).catch(dbxUtil.handleError);
+    }
+
+    var handleRevisionClick = (file) => {
+        dbx.filesDownload({path:file.path_lower, rev:file.rev}).then(data => {
+            readContent(data, content => {
+                revisionContent = content;
+                revisionRev = data.rev;
+                renderPage();
+            });
+        });
+        
+    }
+
+    var handleRestore = () => {
+        render.loading();
+        dbx.filesRestore({path:path, rev:revisionRev}).then(() => {
+            mode = "edit";
+            revisionContent = null;
+            revisionRev = null;
+            loadContent();
+        });
+    };
 
     var renderPage = () => {
 
@@ -144,20 +179,31 @@ routie('/edit*', path => {
             {
                 name: "Edit",
                 onClick:_=> {
-                    editMode = true;
+                    mode = "edit";
                     renderPage();
                 },
                 icon:"fa-edit",
-                active : editMode 
+                active : mode=="edit" 
             },
             {
                 name: "Preview",
                 onClick:_=> {
-                    editMode = false;
+                    mode = "preview"
                     renderPage();
                 },
                 icon:"fa-eye",
-                active : !editMode
+                active : mode=="preview"
+            },
+            {
+                name: "Revisions",
+                onClick:_=> {
+                    mode = "history"
+                    render.loading();
+                    revisionContent = null;
+                    loadRevisions();
+                },
+                icon:"fa-history",
+                active : mode == "history"
             },
             {
                 title:"DANGER"
@@ -169,10 +215,22 @@ routie('/edit*', path => {
             }
         ];
 
-        if (editMode){
+        if (mode == "history" && revisionRev){
+            menu.push({
+                name:"Restore revision",
+                onClick: handleRestore,
+                icon:"fa-undo"
+            });
+        }
+
+        if (mode == "edit"){
             render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => fileContent = newValue.content} /> , menu);
-        } else {
+        } 
+        if (mode == "preview"){
             render(<PreviewPage fileContent={fileContent} fileName={fileName} /> , menu);
+        }
+        if (mode == "history"){
+            render(<HistoryPage revisions={revisions} loadFile={handleRevisionClick}  fileContent={revisionContent} /> , menu);
         }
         
     };
