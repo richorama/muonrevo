@@ -645,7 +645,7 @@ module.exports = React.createClass({
 
         return React.createElement(
             Page,
-            { path: this.props.path },
+            null,
             React.createElement(
                 'div',
                 { className: 'row' },
@@ -931,7 +931,7 @@ var Breadcrumbs = React.createClass({
 
         return React.createElement(
             'ol',
-            { className: 'breadcrumb' },
+            { className: 'breadcrumb', style: { background: "white" } },
             directories.map(function (x) {
                 return React.createElement(
                     'li',

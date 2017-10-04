@@ -80,7 +80,7 @@ module.exports = React.createClass({
             height = "calc(100vh - 220px)"
         }
 
-        return <Page path={this.props.path}>
+        return <Page>
             <div className="row">
                 <div className="col-md-3">
                     <Files 

@@ -17,7 +17,7 @@ var Breadcrumbs = React.createClass({
 
         directories[0].name = "root";
 
-        return <ol className="breadcrumb">
+        return <ol className="breadcrumb" style={{background:"white"}}>
             {directories.map(x => <li><a href={`#/path${x.path}`}><i className={"fa " + x.icon}></i> {x.name}</a></li>)}
         </ol>
 
