@@ -1104,7 +1104,8 @@ module.exports = React.createClass({
 
     getInitialState: function getInitialState() {
         return {
-            theme: storage.get("editor-theme") || "vs"
+            theme: storage.get("editor-theme") || "vs",
+            notificationValue: storage.get("mute") === "true" ? 'Hide notifications' : 'Show notifications'
         };
     },
 
@@ -1120,6 +1121,12 @@ module.exports = React.createClass({
     handleNewEditorTheme: function handleNewEditorTheme(_, newTheme) {
         this.setState({
             theme: newTheme
+        }, this.updateParent);
+    },
+
+    handleNotificationsChange: function handleNotificationsChange(_, newValue) {
+        this.setState({
+            notificationValue: newValue
         }, this.updateParent);
     },
 
@@ -1176,6 +1183,25 @@ module.exports = React.createClass({
                                 'p',
                                 null,
                                 'Delete the stored dropbox access token and reload the application.'
+                            )
+                        )
+                    ),
+                    React.createElement(
+                        'div',
+                        { className: 'form-group row' },
+                        React.createElement(
+                            'label',
+                            { className: 'col-sm-2 control-label' },
+                            'Dropbox notifications'
+                        ),
+                        React.createElement(
+                            'div',
+                            { className: 'col-sm-10' },
+                            React.createElement(Dropdown, { values: ['Show notifications', 'Hide notifications'], value: this.state.notificationValue, onChange: this.handleNotificationsChange }),
+                            React.createElement(
+                                'p',
+                                null,
+                                'Control whether the dropbox client application shows notifications when files are created or updated.'
                             )
                         )
                     )
@@ -1346,11 +1372,13 @@ routie('/edit*', function (path) {
     var revisions;
     var fileName;
     var save = function save() {
+        render.loading();
         dbx.filesUpload({
             path: path,
             contents: fileContent,
             mode: { ".tag": "update", update: rev },
-            autorename: true
+            autorename: true,
+            mute: storage.get("mute") === "true"
         }).then(function (x) {
             routie('/');
         });
@@ -1391,7 +1419,10 @@ routie('/edit*', function (path) {
 
     var handleRestore = function handleRestore() {
         render.loading();
-        dbx.filesRestore({ path: path, rev: revisionRev }).then(function () {
+        dbx.filesRestore({
+            path: path,
+            rev: revisionRev
+        }).then(function () {
             mode = "edit";
             revisionContent = null;
             revisionRev = null;
@@ -1447,7 +1478,7 @@ routie('/edit*', function (path) {
 
         if (mode == "history" && revisionRev) {
             menu.push({
-                name: "Restore revision",
+                name: "Restore Revision",
                 onClick: handleRestore,
                 icon: "fa-undo"
             });
@@ -1471,11 +1502,13 @@ routie('/new-page*', function (path) {
     var dbx = dbxUtil.getDbx();
 
     var save = function save() {
+        render.loading();
         dbx.filesUpload({
             path: (path || "") + '/' + state.title + '.md',
             contents: state.content,
             mode: { ".tag": "add" },
-            autorename: true
+            autorename: true,
+            mute: storage.get("mute") === "true"
         }).then(function (x) {
             routie('/path' + path);
         });
@@ -1532,8 +1565,11 @@ routie('/new-folder*', function (path) {
     var dbx = dbxUtil.getDbx();
     var name = "";
     var createFolder = function createFolder() {
+        render.loading();
         if (!name) return;
-        dbx.filesCreateFolderV2({ path: path + '/' + name }).then(function () {
+        dbx.filesCreateFolderV2({
+            path: path + '/' + name
+        }).then(function () {
             routie('/path' + path + '/' + name);
         });
     };
@@ -1559,7 +1595,9 @@ routie('/delete*', function (path) {
 
     var deleteFile = function deleteFile() {
         render.loading();
-        dbx.filesDelete({ path: path }).then(function () {
+        dbx.filesDelete({
+            path: path
+        }).then(function () {
             routie('/path' + getParent(path));
         });
     };
@@ -1582,6 +1620,9 @@ routie('/settings', function () {
     var save = function save() {
         if (state.theme) {
             storage.put("editor-theme", state.theme);
+        }
+        if (state.notificationValue) {
+            storage.put("mute", state.notificationValue == 'Hide notifications');
         }
         routie('/');
     };

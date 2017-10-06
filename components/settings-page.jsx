@@ -8,7 +8,8 @@ module.exports = React.createClass({
 
     getInitialState:function(){
         return {
-            theme : storage.get("editor-theme") || "vs"
+            theme : storage.get("editor-theme") || "vs",
+            notificationValue : (storage.get("mute") === "true") ? 'Hide notifications' : 'Show notifications'
         };
     },
 
@@ -24,6 +25,12 @@ module.exports = React.createClass({
     handleNewEditorTheme:function(_,newTheme){
         this.setState({
             theme:newTheme
+        }, this.updateParent);
+    },
+
+    handleNotificationsChange:function(_, newValue){
+        this.setState({
+            notificationValue : newValue
         }, this.updateParent);
     },
 
@@ -52,6 +59,20 @@ module.exports = React.createClass({
                         <div className="col-sm-10">
                             <p><a href="javascript:void(0);" onClick={this.handleSignOut} className="btn btn-primary" >Sign Out</a></p>
                             <p>Delete the stored dropbox access token and reload the application.</p>
+                        </div>
+
+
+                    </div>
+
+
+                    <div className="form-group row">
+
+
+                        <label className="col-sm-2 control-label">Dropbox notifications</label>
+
+                        <div className="col-sm-10">
+                            <Dropdown values={['Show notifications', 'Hide notifications']} value={this.state.notificationValue} onChange={this.handleNotificationsChange} />
+                            <p>Control whether the dropbox client application shows notifications when files are created or updated.</p>
                         </div>
 
 

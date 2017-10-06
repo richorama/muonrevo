@@ -106,11 +106,13 @@ routie('/edit*', path => {
     var revisions;
     var fileName;
     var save = () => {
+        render.loading();
         dbx.filesUpload({
             path : path,
             contents : fileContent,
             mode : {".tag" : "update", update : rev},
-            autorename : true
+            autorename : true,
+            mute : storage.get("mute") === "true"
         }).then(x => {
             routie('/')
         })
@@ -152,7 +154,10 @@ routie('/edit*', path => {
 
     var handleRestore = () => {
         render.loading();
-        dbx.filesRestore({path:path, rev:revisionRev}).then(() => {
+        dbx.filesRestore({
+            path:path, 
+            rev:revisionRev
+        }).then(() => {
             mode = "edit";
             revisionContent = null;
             revisionRev = null;
@@ -217,7 +222,7 @@ routie('/edit*', path => {
 
         if (mode == "history" && revisionRev){
             menu.push({
-                name:"Restore revision",
+                name:"Restore Revision",
                 onClick: handleRestore,
                 icon:"fa-undo"
             });
@@ -240,11 +245,13 @@ routie('/new-page*', (path) => {
     var dbx = dbxUtil.getDbx();
 
     var save = () => {
+        render.loading();
         dbx.filesUpload({
             path : `${path || ""}/${state.title}.md`,
             contents : state.content,
             mode : {".tag" : "add"},
-            autorename : true
+            autorename : true,
+            mute : storage.get("mute") === "true"
         }).then(x => {
             routie(`/path${path}`);
         })
@@ -307,8 +314,11 @@ routie('/new-folder*', path => {
     var dbx = dbxUtil.getDbx();
     var name = ""
     var createFolder = () => {
+        render.loading();
         if (!name) return;
-        dbx.filesCreateFolderV2({path:`${path}/${name}`}).then(() => {
+        dbx.filesCreateFolderV2({
+            path:`${path}/${name}`
+        }).then(() => {
             routie(`/path${path}/${name}`);
         });
     };
@@ -337,7 +347,9 @@ routie('/delete*', path => {
 
     var deleteFile = () => {
         render.loading();
-        dbx.filesDelete({path:path}).then(() => {
+        dbx.filesDelete({
+            path:path
+        }).then(() => {
             routie(`/path${getParent(path)}`);
         })
     };
@@ -364,6 +376,9 @@ routie('/settings', () => {
     var save = () => {
         if(state.theme){
             storage.put("editor-theme", state.theme)
+        }
+        if(state.notificationValue){
+            storage.put("mute", state.notificationValue == 'Hide notifications');
         }
         routie('/');
     }
