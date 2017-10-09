@@ -43,6 +43,16 @@ function home(path){
         }).catch(dbxUtil.handleError);
     };
 
+    var deleteFolder = () => {
+        render.loading();
+        dbx.filesDelete({
+            path:path
+        }).then(() => {
+            routie(`/path${getParent(path)}`);
+        });
+
+    };
+
   
     var renderPage = () => {
 
@@ -85,6 +95,18 @@ function home(path){
                 icon:"fa-level-up"
             })
         }
+
+        if (filesData.entries.length === 0){
+            menu.push({
+                title:"DANGER"
+            });
+            menu.push({
+                name:"Delete Folder",
+                onClick: deleteFolder,
+                icon:"fa-trash"
+            });
+        }
+
 
         filesData.entries.filter(x => x[".tag"] === "folder").reverse().forEach(x => {
             menu.push({

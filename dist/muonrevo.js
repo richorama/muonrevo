@@ -1309,6 +1309,15 @@ function home(path) {
         }).catch(dbxUtil.handleError);
     };
 
+    var deleteFolder = function deleteFolder() {
+        render.loading();
+        dbx.filesDelete({
+            path: path
+        }).then(function () {
+            routie('/path' + getParent(path));
+        });
+    };
+
     var renderPage = function renderPage() {
 
         var menu = [{
@@ -1347,6 +1356,17 @@ function home(path) {
                 name: "Parent Folder",
                 path: "#/path" + getParent(path),
                 icon: "fa-level-up"
+            });
+        }
+
+        if (filesData.entries.length === 0) {
+            menu.push({
+                title: "DANGER"
+            });
+            menu.push({
+                name: "Delete Folder",
+                onClick: deleteFolder,
+                icon: "fa-trash"
             });
         }
 
