@@ -4,11 +4,8 @@ build:
 	@echo Test
 	@mocha
 	@echo Build
-	@browserify -t babelify index.jsx --outfile ./dist/muonrevo.js
-	@echo Compress
-	@uglifyjs ./dist/muonrevo.js  --output ./dist/muonrevo.min.js --compress warnings=false
+	@browserify  -t babelify index.jsx  -g [ envify --NODE_ENV production ] -g uglifyify  | uglifyjs --compress warnings=false --mangle > ./dist/muonrevo.min.js
 	@toaster "Annotate" "make successful"
-	@wc -c ./dist/muonrevo.js
 	@wc -c ./dist/muonrevo.min.js
 	@echo Done
 

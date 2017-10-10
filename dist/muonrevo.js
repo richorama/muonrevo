@@ -782,11 +782,11 @@ module.exports = React.createClass({
             { className: "sidebar-menu" },
             this.props.menu.map(function (x) {
                 if (x.title) {
-                    return React.createElement(HeaderSection, { title: x.title });
+                    return React.createElement(HeaderSection, { key: x.title, title: x.title });
                 } else if (x.onClick) {
-                    return React.createElement(ClickSection, { icon: x.icon, name: x.name, onClick: x.onClick, active: x.active });
+                    return React.createElement(ClickSection, { key: x.title, icon: x.icon, name: x.name, onClick: x.onClick, active: x.active });
                 } else {
-                    return React.createElement(MenuSection, { icon: x.icon, name: x.name, path: x.path, active: x.active });
+                    return React.createElement(MenuSection, { key: x.title, icon: x.icon, name: x.name, path: x.path, active: x.active });
                 }
             })
         );
@@ -1698,8 +1698,12 @@ routie.reload();
 },{"./components/confirm-delete-page.jsx":2,"./components/confirm-redirect-page.jsx":3,"./components/edit-page.jsx":5,"./components/folder-page.jsx":6,"./components/history-page.jsx":7,"./components/new-folder-page.jsx":11,"./components/new-page.jsx":12,"./components/page.jsx":13,"./components/panel.jsx":14,"./components/preview-page.jsx":15,"./components/render.jsx":16,"./components/settings-page.jsx":17,"./components/user-panel.jsx":18,"./lib/dbxUtils":20,"./lib/routie":21,"./lib/storage":22,"react":218,"react-dom":66}],20:[function(require,module,exports){
 'use strict';
 
+var dropboxOptions = {
+    clientId: "ra1zvn70dm90i04"
+};
+
 var Dropbox = require('dropbox');
-var dbx = new Dropbox({ clientId: "ra1zvn70dm90i04" });
+var dbx = new Dropbox(dropboxOptions);
 var storage = require('./storage');
 var initialised = false;
 var routie = require('./routie');

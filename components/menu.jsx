@@ -15,7 +15,7 @@ var ClickSection = React.createClass({
 var HeaderSection = React.createClass({
     render:function(){
         var key = 0;
-        return <li className="header">
+        return <li key={this.props.name} className="header">
            {this.props.title}
         </li>
     }
@@ -26,11 +26,11 @@ module.exports = React.createClass({
         return <ul className="sidebar-menu">
             {this.props.menu.map(x => {
                 if (x.title){
-                    return <HeaderSection title={x.title} />
+                    return <HeaderSection key={x.name} title={x.title} />
                 } else if (x.onClick){
-                    return <ClickSection icon={x.icon} name={x.name} onClick={x.onClick} active={x.active} />
+                    return <ClickSection key={x.name} icon={x.icon} name={x.name} onClick={x.onClick} active={x.active} />
                 } else {
-                    return <MenuSection icon={x.icon} name={x.name} path={x.path} active={x.active} />
+                    return <MenuSection key={x.name} icon={x.icon} name={x.name} path={x.path} active={x.active} />
                 }
             })}
         </ul>
