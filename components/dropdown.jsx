@@ -14,7 +14,6 @@ module.exports = React.createClass({
 	},
 	render: function(){
 		var that = this;
-		console.log("selected Value", this.state.selectedValue)
 		return <select className="form-control" ref="dropdown-control" onChange={this.handleChange} value={this.state.selectedValue} disabled={!!this.props.disabled}>
 			{ this.props.values.map(function(x){
 				if (typeof x === "string"){

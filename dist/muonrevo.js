@@ -287,7 +287,6 @@ module.exports = React.createClass({
 	},
 	render: function render() {
 		var that = this;
-		console.log("selected Value", this.state.selectedValue);
 		return React.createElement(
 			'select',
 			{ className: 'form-control', ref: 'dropdown-control', onChange: this.handleChange, value: this.state.selectedValue, disabled: !!this.props.disabled },
