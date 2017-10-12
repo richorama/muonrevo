@@ -35,7 +35,7 @@ function home(path){
 
     var loadFile = (meta) => {
         selectedFile = meta;
-        dbx.filesDownload({path:meta.path_lower}).then(data => {
+        dbx.filesCachedDownload({path:meta.path_lower, rev:meta.rev}).then(data => {
             readContent(data, content => {
                 fileContent = content;    
                 renderPage();
@@ -164,7 +164,7 @@ routie('/edit*', path => {
     }
 
     var handleRevisionClick = (file) => {
-        dbx.filesDownload({path:file.path_lower, rev:file.rev}).then(data => {
+        dbx.filesDownload({path:file.path_lower}).then(data => {
             readContent(data, content => {
                 revisionContent = content;
                 revisionRev = data.rev;
