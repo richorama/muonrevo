@@ -4,9 +4,16 @@ build:
 	@echo Test
 	@mocha
 	@echo Build
-	@browserify  -t babelify index.jsx  -g [ envify --NODE_ENV production ] -g uglifyify  | uglifyjs --compress warnings=false --mangle > ./dist/muonrevo.min.js
+	@browserify -t babelify index.jsx  -g [ envify --NODE_ENV production ] -g uglifyify  | uglifyjs --compress warnings=false --mangle > ./dist/muonrevo.min.js
 	@wc -c ./dist/muonrevo.min.js
 	@echo Done
 
 run: build
+	@static
+
+debug:
+	@echo DEBUG
+	@browserify -t babelify index.jsx > ./dist/muonrevo.min.js
+	@wc -c ./dist/muonrevo.min.js
+	@echo Done
 	@static

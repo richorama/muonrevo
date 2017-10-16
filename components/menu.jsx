@@ -23,7 +23,7 @@ var HeaderSection = React.createClass({
 
 module.exports = React.createClass({
     render:function(){
-        return <ul className="sidebar-menu">
+        return <ul key="menu" className="sidebar-menu">
             {this.props.menu.map(x => {
                 if (x.title){
                     return <HeaderSection key={x.name} title={x.title} />
@@ -34,6 +34,7 @@ module.exports = React.createClass({
                 }
             })}
         </ul>
+        
     }
 });
 

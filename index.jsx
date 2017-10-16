@@ -16,12 +16,14 @@ var NewFolderPage = require('./components/new-folder-page.jsx');
 var Settings = require('./components/settings-page.jsx');
 var ConfirmRefirectPage = require('./components/confirm-redirect-page.jsx');
 var HistoryPage = require('./components/history-page.jsx');
-
+var lastPath = "";
 routie('', home);
 routie('/', home);
 routie('/path*', home);
 
+
 function home(path){
+    lastPath = path || "";
     render.loading();
 
     var selectedFile;
@@ -53,6 +55,13 @@ function home(path){
 
     };
 
+    render.onSearch(term => {
+        dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
+            console.log(results);
+            filesData.entries = results.matches.map(match => match.metadata);
+            renderPage();
+        });
+    });
   
     var renderPage = () => {
 
@@ -116,7 +125,7 @@ function home(path){
             });
         })
 
-        render(<FolderPage path={path} files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu);
+        render(<FolderPage path={path} files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu, true);
     };
 }
 
@@ -453,6 +462,8 @@ function getParent(path){
 dbxUtil.on("user", user => {
     ReactDOM.render(<UserPanel user={user} />, document.getElementById("user-content"));
 });
+
+
 
 // do this after all the routes have been set
 routie.reload();
