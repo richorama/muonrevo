@@ -3,6 +3,7 @@ var React = require('react');
 module.exports = React.createClass({
     handleSearch:function(e){
         e.preventDefault();
+        if (!this.refs.searchText.value) return;
         this.props.onSearch(this.refs.searchText.value)
     },
 

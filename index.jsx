@@ -56,76 +56,88 @@ function home(path){
     };
 
     render.onSearch(term => {
+        render.loading();
         dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
-            console.log(results);
-            filesData.entries = results.matches.map(match => match.metadata);
-            renderPage();
+            //filesData.entries = results.matches.map(match => match.metadata);
+            renderPage(results.matches.map(match => match.metadata));
         });
     });
   
-    var renderPage = () => {
+    var renderPage = (search) => {
+        var files = filesData.entries;
+        var menu;
+        if (search) {
+            files = search;
+            menu = [
+                {
+                    name:"Clear Search",
+                    onClick:renderPage,
+                    icon:"fa-times"
+                }
+            ];
+        } else {
+            menu = [
+                {
+                    name:"New Entry",
+                    path:"#/new-page" + (path || ""),
+                    icon:"fa-file-text"
+                },
+                {
+                    name:"New Folder",
+                    path:"#/new-folder" + (path || ""),
+                    icon:"fa-folder-open"
+                }
+            ];
 
-        var menu = [
-            {
-                name:"New Entry",
-                path:"#/new-page" + (path || ""),
-                icon:"fa-file-text"
-            },
-            {
-                name:"New Folder",
-                path:"#/new-folder" + (path || ""),
-                icon:"fa-folder-open"
+            if (selectedFile){
+                menu.push({
+                    title:"ENTRY"
+                });
+                            
+                menu.push({
+                    name: "Edit",
+                    path:"#/edit" + selectedFile.path_lower,
+                    icon:"fa-pencil-square-o"
+                });
             }
-        ];
 
-        if (selectedFile){
-            menu.push({
-                title:"ENTRY"
-            });
-                        
-            menu.push({
-                name: "Edit",
-                path:"#/edit" + selectedFile.path_lower,
-                icon:"fa-pencil-square-o"
-            });
-        }
+            if (path || filesData.entries.filter(x => x[".tag"] === "folder").length){
+                menu.push({
+                    title:"FOLDERS"
+                });
+            }
 
-        if (path || filesData.entries.filter(x => x[".tag"] === "folder").length){
-            menu.push({
-                title:"FOLDERS"
-            });
-        }
+            if (path){
+                
+                menu.push({
+                    name: "Parent Folder",
+                    path:"#/path" + getParent(path),
+                    icon:"fa-level-up"
+                })
+            }
 
-        if (path){
-            
-            menu.push({
-                name: "Parent Folder",
-                path:"#/path" + getParent(path),
-                icon:"fa-level-up"
+            if (filesData.entries.length === 0){
+                menu.push({
+                    title:"DANGER"
+                });
+                menu.push({
+                    name:"Delete Folder",
+                    onClick: deleteFolder,
+                    icon:"fa-trash"
+                });
+            }
+            filesData.entries.filter(x => x[".tag"] === "folder").reverse().forEach(x => {
+                menu.push({
+                    name:x.name,
+                    path:"#/path" + x.path_lower,
+                    icon:"fa-folder"
+                });
             })
-        }
-
-        if (filesData.entries.length === 0){
-            menu.push({
-                title:"DANGER"
-            });
-            menu.push({
-                name:"Delete Folder",
-                onClick: deleteFolder,
-                icon:"fa-trash"
-            });
+    
         }
 
 
-        filesData.entries.filter(x => x[".tag"] === "folder").reverse().forEach(x => {
-            menu.push({
-                name:x.name,
-                path:"#/path" + x.path_lower,
-                icon:"fa-folder"
-            });
-        })
-
-        render(<FolderPage path={path} files={filesData.entries} fileContent={fileContent} loadFile={loadFile} /> , menu, true);
+        render(<FolderPage path={path} files={files} fileContent={fileContent} loadFile={loadFile} /> , menu, true);
     };
 }
 
