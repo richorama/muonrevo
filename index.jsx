@@ -185,7 +185,7 @@ routie('/edit*', path => {
     }
 
     var handleRevisionClick = (file) => {
-        dbx.filesDownload({path:file.path_lower}).then(data => {
+        dbx.filesDownload({path:file.path_lower, rev:file.rev}).then(data => {
             readContent(data, content => {
                 revisionContent = content;
                 revisionRev = data.rev;
