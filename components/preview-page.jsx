@@ -1,13 +1,12 @@
 var React = require('react');
 var Page = require('./page.jsx');
 var Panel = require('./panel.jsx');
-var marked = require('marked');
-var emoji = require('node-emoji');
+var renderContent = require('../lib/renderContent');
 
 module.exports = React.createClass({
  
     createMarkup : function() { 
-        return {__html: emoji.emojify(marked(this.props.fileContent || ""))}; 
+        return {__html: renderContent(this.props.fileContent)}; 
     },
 
     render:function(){

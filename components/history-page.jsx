@@ -2,9 +2,8 @@ var React = require('react');
 var Page = require('./page.jsx');
 var Panel = require('./panel.jsx');
 var If = require('./if-else.jsx');
-var marked = require('marked');
 var Loading = require('./loading.jsx');
-var emoji = require('node-emoji');
+var renderContent = require('../lib/renderContent');
 
 var Files = React.createClass({
     render:function(){
@@ -34,7 +33,7 @@ var Files = React.createClass({
 
 var FilePreview = React.createClass({
     createMarkup : function() { 
-        return {__html: emoji.emojify(marked(this.props.fileContent || ""))}; 
+        return {__html: renderContent(this.props.fileContent)}; 
     },
     render:function(){
         return <Panel title={toDisplayName(this.props.file.name)} noPadding={true}>
