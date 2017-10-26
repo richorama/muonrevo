@@ -21,8 +21,19 @@ routie('', home);
 routie('/', home);
 routie('/path*', home);
 
+var requestId = 0;
+function getRequestId(){
+    return ++requestId;
+}
+
+function hasRequestExpired(myRequestId){
+    return (myRequestId !== requestId);
+}
+
 
 function home(path){
+    var myReqId = getRequestId();
+
     lastPath = path || "";
     render.loading();
 
@@ -64,6 +75,8 @@ function home(path){
     });
   
     var renderPage = (search) => {
+        if (hasRequestExpired(myReqId)) return;
+
         var files = filesData.entries;
         var menu;
         if (search) {
@@ -142,6 +155,7 @@ function home(path){
 }
 
 routie('/edit*', path => {
+    var myReqId = getRequestId();
     render.loading();
     var dbx = dbxUtil.getDbx();
 
@@ -209,7 +223,7 @@ routie('/edit*', path => {
     };
 
     var renderPage = () => {
-
+        if (hasRequestExpired(myReqId)) return;
         var menu = [
             {
                 name:"Save",
@@ -285,6 +299,7 @@ routie('/edit*', path => {
 });
 
 routie('/new-page*', (path) => {
+    var myReqId = getRequestId();
     var dbx = dbxUtil.getDbx();
 
     var save = () => {
@@ -306,6 +321,7 @@ routie('/new-page*', (path) => {
     var editMode = true;
 
     var renderPage = () => {
+        if (hasRequestExpired(myReqId)) return;
 
         var menu = [
             {
