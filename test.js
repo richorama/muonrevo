@@ -1,5 +1,6 @@
 var humanize = require('./lib/humanize');
 var storage = require('./lib/storage');
+var memStorage = require('./lib/memStorage');
 var renderContent = require('./lib/renderContent');
 
 describe("humanize", () => {
@@ -18,6 +19,23 @@ describe("humanize", () => {
 
 describe("storage", () => {
     it("polyfills localstorage", done => {
+        
+        if (storage.get("foo")) return done("expected null")
+        
+        storage.put("foo", "bar");
+        
+        if ("bar" !== storage.get("foo")) return done("expected bar")
+               
+        storage.del("foo");
+        
+        if (storage.get("foo")) return done("expected value to be deleted");
+        
+        done();
+    });
+});
+
+describe("memStorage", () => {
+    it("a local memory store", done => {
         
         if (storage.get("foo")) return done("expected null")
         
