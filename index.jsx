@@ -84,7 +84,7 @@ function home(path){
             menu = [
                 {
                     name:"Clear Search",
-                    onClick:renderPage,
+                    onClick:() => renderPage(),
                     icon:"fa-times"
                 }
             ];
