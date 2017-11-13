@@ -5,29 +5,54 @@ var If = require('./if-else.jsx');
 var Loading = require('./loading.jsx');
 var renderContent = require('../lib/renderContent');
 
+
+function grouper(entries){
+    if (!entries) return [];
+    if (!entries.length) return [];
+    
+    var output = {};
+    entries.forEach(x => {
+        var day = x.client_modified.split('T')[0];
+        if (!output[day]) output[day] = {day:day, items:[]};
+        output[day].items.push(x);
+    });
+    var keys = Object.keys(output).sort();
+    keys.reverse();
+    return keys.map(key => output[key]);
+}
+
+
 var Files = React.createClass({
     render:function(){
-        return <Panel title="Revisions" noPadding={true}>
-            <div style={{overflow:"auto", height:this.props.height}}>
-            <table className="table"><tbody>
-            {this.props.files.map(file => {
-                var style = "";
-                if (file === this.props.selectedFile){
-                    style = "active"
-                }
+        var items = [];
 
-                return <tr key={file.rev} className={style} ><td>
-                    <a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
-                        <strong>{toDisplayName(file.name)}</strong>
-                        <p className="text-muted">{prettyDate(file.client_modified)}</p>
-                    </a>
-                </td></tr>
-            })}
-            </tbody></table></div>
-        </Panel>
+        grouper(this.props.files).forEach(group => {
+            items.push(<li key={group.day} className="time-label"><span className="bg-gray">{group.day}</span></li>);
+
+            group.items.forEach(file => {
+                var style = "";
+                if (file === this.props.selectedFile){ style = "active" }
+
+                items.push(<li key={file.rev}><i className="fa fa-edit bg-blue"></i><div className={"timeline-item " + style}>
+                        <span className="time"><i className="fa fa-clock-o"></i> {file.client_modified.split('T')[1]}</span>
+                        
+                        <h3 className="timeline-header"><a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
+                            {toDisplayName(file.name)}
+                        </a></h3>
+                </div></li>);
+            });
+   
+        });
+        items.push(<li key="end"><i className="fa fa-clock-o bg-gray"></i></li>);
+
+        return <div style={{overflow:"auto", height:this.props.height}}>
+            <ul className="timeline">
+                {items}
+            </ul>
+        </div>
+    
 
     }
-
 });
 
 

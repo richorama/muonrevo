@@ -205,6 +205,10 @@ routie('/edit*', path => {
                 revisionRev = data.rev;
                 renderPage();
             });
+        }).catch(() => {
+            revisionContent = "ERROR: unable to load content";
+            revisionRev = file.rev;
+            renderPage();
         });
         
     }
