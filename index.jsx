@@ -30,8 +30,12 @@ function hasRequestExpired(myRequestId){
     return (myRequestId !== requestId);
 }
 
+function setTitle(title){
+    document.title = title;
+}
 
 function home(path){
+    setTitle('MuonRevo');
     var myReqId = getRequestId();
 
     lastPath = path || "";
@@ -47,6 +51,7 @@ function home(path){
     }).catch(dbxUtil.handleError);
 
     var loadFile = (meta) => {
+        setTitle(meta.path_lower);
         selectedFile = meta;
         dbx.filesCachedDownload({path:meta.path_lower, rev:meta.rev}).then(data => {
             readContent(data, content => {
@@ -67,6 +72,7 @@ function home(path){
     };
 
     render.onSearch(term => {
+        setTitle(`Seaching : ${term}`)
         render.loading();
         dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
             //filesData.entries = results.matches.map(match => match.metadata);
@@ -155,6 +161,7 @@ function home(path){
 }
 
 routie('/edit*', path => {
+    setTitle(path);
     var myReqId = getRequestId();
     render.loading();
     var dbx = dbxUtil.getDbx();
@@ -303,6 +310,7 @@ routie('/edit*', path => {
 });
 
 routie('/new-page*', (path) => {
+    setTitle('new entry');
     var myReqId = getRequestId();
     var dbx = dbxUtil.getDbx();
 
@@ -374,6 +382,7 @@ routie('/new-page*', (path) => {
 });
 
 routie('/new-folder*', path => {
+    setTitle('new folder');
     var dbx = dbxUtil.getDbx();
     var name = ""
     var createFolder = () => {
@@ -406,6 +415,7 @@ routie('/new-folder*', path => {
 });
 
 routie('/delete*', path => {
+    setTitle('confirm delete');
     var dbx = dbxUtil.getDbx();
 
     var deleteFile = () => {
@@ -435,6 +445,7 @@ routie('/delete*', path => {
 });
 
 routie('/settings', () => {
+    setTitle('settings');
     var dbx = dbxUtil.getDbx();
     var save = () => {
         if(state.theme){
