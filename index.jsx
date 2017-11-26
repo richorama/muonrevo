@@ -72,7 +72,7 @@ function home(path){
     };
 
     render.onSearch(term => {
-        setTitle(`Seaching : ${term}`)
+        setTitle(`Seaching: ${term}`)
         render.loading();
         dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
             //filesData.entries = results.matches.map(match => match.metadata);
@@ -310,7 +310,7 @@ routie('/edit*', path => {
 });
 
 routie('/new-page*', (path) => {
-    setTitle('new entry');
+    setTitle('New Entry');
     var myReqId = getRequestId();
     var dbx = dbxUtil.getDbx();
 
@@ -382,7 +382,7 @@ routie('/new-page*', (path) => {
 });
 
 routie('/new-folder*', path => {
-    setTitle('new folder');
+    setTitle('New Folder');
     var dbx = dbxUtil.getDbx();
     var name = ""
     var createFolder = () => {
@@ -415,7 +415,7 @@ routie('/new-folder*', path => {
 });
 
 routie('/delete*', path => {
-    setTitle('confirm delete');
+    setTitle('Confirm Delete');
     var dbx = dbxUtil.getDbx();
 
     var deleteFile = () => {
@@ -445,7 +445,7 @@ routie('/delete*', path => {
 });
 
 routie('/settings', () => {
-    setTitle('settings');
+    setTitle('Settings');
     var dbx = dbxUtil.getDbx();
     var save = () => {
         if(state.theme){
