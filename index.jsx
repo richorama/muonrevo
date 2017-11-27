@@ -169,10 +169,11 @@ routie('/edit*', path => {
     var mode = "edit";
     var revisions;
     var fileName;
+    var pathDisplay;
     var save = () => {
         render.loading();
         dbx.filesUpload({
-            path : path,
+            path : pathDisplay,
             contents : fileContent,
             mode : {".tag" : "update", update : rev},
             autorename : true,
@@ -192,6 +193,7 @@ routie('/edit*', path => {
                 fileContent = content;    
                 fileName = data.name;
                 rev = data.rev;
+                pathDisplay = data.path_display;
                 renderPage();
             });
         }).catch(dbxUtil.handleError);
