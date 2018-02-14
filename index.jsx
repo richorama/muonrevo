@@ -33,7 +33,7 @@ function hasRequestExpired(myRequestId){
 }
 
 function setTitle(title){
-    document.title = (title || "").substring(1);
+    document.title = (title || "").replace('/','');
 }
 
 var timeout;
