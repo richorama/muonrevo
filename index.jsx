@@ -16,6 +16,8 @@ var NewFolderPage = require('./components/new-folder-page.jsx');
 var Settings = require('./components/settings-page.jsx');
 var ConfirmRefirectPage = require('./components/confirm-redirect-page.jsx');
 var HistoryPage = require('./components/history-page.jsx');
+var Notification = require('./components/notification.jsx');
+
 var lastPath = "";
 routie('', home);
 routie('/', home);
@@ -31,7 +33,20 @@ function hasRequestExpired(myRequestId){
 }
 
 function setTitle(title){
-    document.title = title;
+    document.title = (title || "").substring(1);
+}
+
+var timeout;
+function showNotification(icon, message){
+    if (timeout) clearTimeout(timeout);
+    var jsx = <Notification message={message} icon={icon} />
+    render.notification(jsx);
+    timeout = setTimeout(clearNotification, 5000);
+}
+
+function clearNotification(){
+    timeout = null;
+    render.notification(<span/>);
 }
 
 function home(path){
@@ -171,6 +186,7 @@ routie('/edit*', path => {
     var fileName;
     var pathDisplay;
     var save = () => {
+        showNotification("save", "SAVING...");
         render.loading();
         dbx.filesUpload({
             path : pathDisplay,
@@ -179,7 +195,22 @@ routie('/edit*', path => {
             autorename : true,
             mute : storage.get("mute") === "true"
         }).then(x => {
+            showNotification("check", "SAVED");
             routie('/')
+        })
+    };
+
+    var saveContinue = () => {
+        showNotification("save", "SAVING...");
+        dbx.filesUpload({
+            path : pathDisplay,
+            contents : fileContent,
+            mode : {".tag" : "update", update : rev},
+            autorename : true,
+            mute : storage.get("mute") === "true"
+        }).then(x => {
+            rev = x.rev;
+            showNotification("check", "SAVED");
         })
     };
 
@@ -239,8 +270,13 @@ routie('/edit*', path => {
         if (hasRequestExpired(myReqId)) return;
         var menu = [
             {
-                name:"Save",
+                name:"Save & Close",
                 onClick: save,
+                icon:"fa-save"
+            },
+            {
+                name:"Save",
+                onClick: saveContinue,
                 icon:"fa-save"
             },
             {
@@ -315,19 +351,37 @@ routie('/new-page*', (path) => {
     setTitle('New Entry');
     var myReqId = getRequestId();
     var dbx = dbxUtil.getDbx();
+    var rev;
 
     var save = () => {
+        showNotification("save", "SAVING...");
         render.loading();
         dbx.filesUpload({
             path : `${path || ""}/${state.title}.md`,
             contents : state.content,
-            mode : {".tag" : "add"},
+            mode : rev ? {".tag" : "update", update : rev} :  {".tag" : "add"},
             autorename : true,
             mute : storage.get("mute") === "true"
         }).then(x => {
+            showNotification("check", "SAVED");
             routie(`/path${path}`);
         })
     }
+
+    var saveContinue = () => {
+        showNotification("save", "SAVING...");
+        dbx.filesUpload({
+            path : `${path || ""}/${state.title}.md`,
+            contents : state.content,
+            mode : rev ? {".tag" : "update", update : rev} :  {".tag" : "add"},
+            autorename : true,
+            mute : storage.get("mute") === "true"
+        }).then(x => {
+            rev = x.rev;
+            showNotification("check", "SAVED");
+        })
+    }
+
     var state = {
         content : "Enter your notes here...",
         title : ""
@@ -339,8 +393,13 @@ routie('/new-page*', (path) => {
 
         var menu = [
             {
-                name:"Save",
+                name:"Save & Close",
                 onClick:save,
+                icon:"fa-save"
+            },
+            {
+                name:"Save",
+                onClick:saveContinue,
                 icon:"fa-save"
             },
             {
@@ -421,10 +480,12 @@ routie('/delete*', path => {
     var dbx = dbxUtil.getDbx();
 
     var deleteFile = () => {
+        showNotification("trash", "DELETING...");
         render.loading();
         dbx.filesDelete({
             path:path
         }).then(() => {
+            showNotification("check", "DELETED");
             routie(`/path${getParent(path)}`);
         })
     };
@@ -433,7 +494,7 @@ routie('/delete*', path => {
         {
             name:"Delete",
             onClick:deleteFile,
-            icon:"fa-save"
+            icon:"fa-trash"
         },
         {
             name:"Cancel",

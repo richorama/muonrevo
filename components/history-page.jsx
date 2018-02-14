@@ -34,7 +34,7 @@ var Files = React.createClass({
                 if (file === this.props.selectedFile){ style = "active" }
 
                 items.push(<li key={file.rev}><i className="fa fa-edit bg-blue"></i><div className={"timeline-item " + style}>
-                        <span className="time"><i className="fa fa-clock-o"></i> {file.client_modified.split('T')[1]}</span>
+                        <span className="time"><i className="fa fa-clock-o"></i> {file.client_modified.split('T')[1].replace('Z', '')}</span>
                         
                         <h3 className="timeline-header"><a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
                             {toDisplayName(file.name)}
