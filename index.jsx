@@ -49,6 +49,10 @@ function clearNotification(){
     render.notification(<span/>);
 }
 
+function handleError(){
+    showNotification("close", "FAILED");
+}
+
 function home(path){
     setTitle('MuonRevo');
     var myReqId = getRequestId();
@@ -63,7 +67,7 @@ function home(path){
     dbx.filesListFolder({path:path || ''}).then(data => {
         filesData = data;
         renderPage();
-    }).catch(dbxUtil.handleError);
+    }).catch(handleError);
 
     var loadFile = (meta) => {
         setTitle(meta.path_lower);
@@ -73,7 +77,7 @@ function home(path){
                 fileContent = content;    
                 renderPage();
             });
-        }).catch(dbxUtil.handleError);
+        }).catch(handleError);
     };
 
     var deleteFolder = () => {
@@ -82,7 +86,7 @@ function home(path){
             path:path
         }).then(() => {
             routie(`/path${getParent(path)}`);
-        });
+        }).catch(handleError);
 
     };
 
@@ -92,7 +96,7 @@ function home(path){
         dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
             //filesData.entries = results.matches.map(match => match.metadata);
             renderPage(results.matches.map(match => match.metadata));
-        });
+        }).catch(handleError);
     });
   
     var renderPage = (search) => {
@@ -197,7 +201,7 @@ routie('/edit*', path => {
         }).then(x => {
             showNotification("check", "SAVED");
             routie('/')
-        })
+        }).catch(handleError);
     };
 
     var saveContinue = () => {
@@ -211,7 +215,7 @@ routie('/edit*', path => {
         }).then(x => {
             rev = x.rev;
             showNotification("check", "SAVED");
-        })
+        }).catch(handleError);
     };
 
     var fileContent;
@@ -227,7 +231,7 @@ routie('/edit*', path => {
                 pathDisplay = data.path_display;
                 renderPage();
             });
-        }).catch(dbxUtil.handleError);
+        }).catch(handleError);
     };
     loadContent();
 
@@ -235,7 +239,7 @@ routie('/edit*', path => {
         dbx.filesListRevisions({path:path}).then(revs => {
             revisions = revs.entries;
             renderPage();
-        });
+        }).catch(handleError);
     }
 
     var handleRevisionClick = (file) => {
@@ -263,7 +267,7 @@ routie('/edit*', path => {
             revisionContent = null;
             revisionRev = null;
             loadContent();
-        });
+        }).catch(handleError);
     };
 
     var renderPage = () => {
@@ -365,7 +369,7 @@ routie('/new-page*', (path) => {
         }).then(x => {
             showNotification("check", "SAVED");
             routie(`/path${path}`);
-        })
+        }).catch(handleError);
     }
 
     var saveContinue = () => {
@@ -379,7 +383,7 @@ routie('/new-page*', (path) => {
         }).then(x => {
             rev = x.rev;
             showNotification("check", "SAVED");
-        })
+        }).catch(handleError);
     }
 
     var state = {
@@ -453,7 +457,7 @@ routie('/new-folder*', path => {
             path:`${path}/${name}`
         }).then(() => {
             routie(`/path${path}/${name}`);
-        });
+        }).catch(handleError);
     };
     var handleUpdate = newValue => {
         name = newValue.title;
@@ -487,7 +491,7 @@ routie('/delete*', path => {
         }).then(() => {
             showNotification("check", "DELETED");
             routie(`/path${getParent(path)}`);
-        })
+        }).catch(handleError);
     };
 
     var menu = [
