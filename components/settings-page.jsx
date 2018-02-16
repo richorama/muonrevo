@@ -59,7 +59,8 @@ module.exports = React.createClass({
                         <label className="col-sm-2 control-label">Dropbox notifications</label>
                         <div className="col-sm-10">
                             <Dropdown values={['Show notifications', 'Hide notifications']} value={this.state.notificationValue} onChange={this.handleNotificationsChange} />
-                            <p>Control whether the dropbox client application shows notifications when files are created or updated.</p>
+                            <p>Control whether the dropbox client application shows notifications when files are created or updated.<br/>
+                            Notifications will always be shown when files are deleted</p>
                         </div>
                     </div>
 
