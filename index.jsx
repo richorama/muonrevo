@@ -201,7 +201,10 @@ routie('/edit*', path => {
         }).then(x => {
             showNotification("check", "SAVED");
             routie('/')
-        }).catch(handleError);
+        }).catch(() => {
+            renderPage();
+            handleError();
+        });
     };
 
     var saveContinue = () => {
