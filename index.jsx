@@ -372,7 +372,10 @@ routie('/new-page*', (path) => {
         }).then(x => {
             showNotification("check", "SAVED");
             routie(`/path${path}`);
-        }).catch(handleError);
+        }).catch(() => {
+            renderPage();
+            handleError();
+        });
     }
 
     var saveContinue = () => {
