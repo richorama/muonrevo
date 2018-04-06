@@ -53,7 +53,21 @@ function handleError(){
     showNotification("close", "FAILED");
 }
 
+var hasBeenEdited = false;
+function edited(){
+    if (!hasBeenEdited){
+        window.onbeforeunload = () => true;
+    }
+    hasBeenEdited = true;
+}
+
+function saved(){
+    hasBeenEdited = false;
+    window.onbeforeunload = null;
+}
+
 function home(path){
+    saved();
     setTitle('MuonRevo');
     var myReqId = getRequestId();
 
@@ -181,6 +195,7 @@ function home(path){
 
 routie('/edit*', path => {
     setTitle(path);
+    saved();
     var myReqId = getRequestId();
     render.loading();
     var dbx = dbxUtil.getDbx();
@@ -200,6 +215,7 @@ routie('/edit*', path => {
             mute : storage.get("mute") === "true"
         }).then(x => {
             showNotification("check", "SAVED");
+            saved();
             routie('/')
         }).catch(() => {
             renderPage();
@@ -218,10 +234,15 @@ routie('/edit*', path => {
         }).then(x => {
             rev = x.rev;
             showNotification("check", "SAVED");
+            saved();
         }).catch(handleError);
     };
 
     var fileContent;
+    var updateContent = newContent => {
+        fileContent = newContent;
+        edited();
+    }
     var revisionContent;
     var revisionRev;
     var rev;
@@ -342,7 +363,7 @@ routie('/edit*', path => {
         }
 
         if (mode == "edit"){
-            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => fileContent = newValue.content} /> , menu);
+            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => updateContent(newValue.content)} /> , menu);
         } 
         if (mode == "preview"){
             render(<PreviewPage fileContent={fileContent} fileName={fileName} /> , menu);
@@ -356,6 +377,7 @@ routie('/edit*', path => {
 
 routie('/new-page*', (path) => {
     setTitle('New Entry');
+    saved();
     var myReqId = getRequestId();
     var dbx = dbxUtil.getDbx();
     var rev;
@@ -370,6 +392,7 @@ routie('/new-page*', (path) => {
             autorename : true,
             mute : storage.get("mute") === "true"
         }).then(x => {
+            saved();
             showNotification("check", "SAVED");
             routie(`/path${path}`);
         }).catch(() => {
@@ -388,6 +411,7 @@ routie('/new-page*', (path) => {
             mute : storage.get("mute") === "true"
         }).then(x => {
             rev = x.rev;
+            saved();
             showNotification("check", "SAVED");
         }).catch(handleError);
     }
@@ -442,7 +466,7 @@ routie('/new-page*', (path) => {
 
         
         if (editMode){
-            render(<NewPage onUpdate={newState => state = newState} fileContent={state.content} title={state.title} />, menu);
+            render(<NewPage onUpdate={newState => { state = newState; edited()} } fileContent={state.content} title={state.title} />, menu);
         } else {
             render(<PreviewPage fileContent={state.content} fileName={state.title} /> , menu);
         }
@@ -454,6 +478,7 @@ routie('/new-page*', (path) => {
 
 routie('/new-folder*', path => {
     setTitle('New Folder');
+    saved();
     var dbx = dbxUtil.getDbx();
     var name = ""
     var createFolder = () => {
@@ -487,6 +512,7 @@ routie('/new-folder*', path => {
 
 routie('/delete*', path => {
     setTitle('Confirm Delete');
+    saved();
     var dbx = dbxUtil.getDbx();
 
     var deleteFile = () => {
@@ -519,6 +545,7 @@ routie('/delete*', path => {
 
 routie('/settings', () => {
     setTitle('Settings');
+    saved();
     var dbx = dbxUtil.getDbx();
     var save = () => {
         if(state.theme){
@@ -552,6 +579,7 @@ routie('/settings', () => {
 
 routie('/login', ()=>{
     var url = dbxUtil.getLoginUrl();
+    saved();
     render(<ConfirmRefirectPage url={url} />, []);
 });
 
@@ -576,6 +604,7 @@ function getParent(path){
 }
 
 dbxUtil.on("user", user => {
+    saved();
     ReactDOM.render(<UserPanel user={user} />, document.getElementById("user-content"));
 });
 
