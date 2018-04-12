@@ -8,6 +8,7 @@ var Search = require('./search.jsx');
 var contentElement = document.getElementById('content');
 var menuElement = document.getElementById('menu');
 var notificationElement = document.getElementById('notification-content');
+var statusElement = document.getElementById('status-content');
 
 module.exports = function(jsx, menu, showSearch){
     ReactDom.render(jsx, contentElement);
@@ -24,6 +25,10 @@ module.exports.loading = function(){
 
 module.exports.notification = function(jsx){
     ReactDom.render(jsx, notificationElement);
+}
+
+module.exports.status = function(jsx){
+    ReactDom.render(jsx, statusElement);
 }
 
 var searchCallback;

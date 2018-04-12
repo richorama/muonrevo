@@ -57,6 +57,7 @@ var hasBeenEdited = false;
 function edited(){
     if (!hasBeenEdited){
         window.onbeforeunload = () => true;
+        render.status(<Notification message="EDITED" icon="circle" />);
     }
     hasBeenEdited = true;
 }
@@ -64,6 +65,7 @@ function edited(){
 function saved(){
     hasBeenEdited = false;
     window.onbeforeunload = null;
+    render.status(<span></span>);
 }
 
 function home(path){
