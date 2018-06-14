@@ -1,3 +1,5 @@
+![](https://travis-ci.org/richorama/muonrevo.svg?branch=master)
+
 ![](screenshot.png)
 
 # MuonRevo
