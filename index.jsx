@@ -33,7 +33,9 @@ function hasRequestExpired(myRequestId){
 }
 
 function setTitle(title){
-    document.title = (title || "").replace('/','');
+    document.title = (title || "")
+        .replace('/','')
+        .replace(".md","");
 }
 
 var timeout;
@@ -86,7 +88,7 @@ function home(path){
     }).catch(handleError);
 
     var loadFile = (meta) => {
-        setTitle(meta.path_lower);
+        setTitle(meta.path_display);
         selectedFile = meta;
         dbx.filesCachedDownload({path:meta.path_lower, rev:meta.rev}).then(data => {
             readContent(data, content => {
@@ -196,7 +198,6 @@ function home(path){
 }
 
 routie('/edit*', path => {
-    setTitle(path);
     saved();
     var myReqId = getRequestId();
     render.loading();
@@ -251,6 +252,7 @@ routie('/edit*', path => {
     var loadContent = () => {
         dbx.filesDownload({path:path}).then(data => {
             readContent(data, content => {
+                setTitle(data.path_display);
                 fileContent = content;    
                 fileName = data.name;
                 rev = data.rev;
