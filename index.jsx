@@ -60,6 +60,7 @@ function edited(){
     if (!hasBeenEdited){
         window.onbeforeunload = () => true;
         render.status(<Notification message="EDITED" icon="circle" />);
+        document.getElementById("favicon").setAttribute('href', 'favicon-edit.png');
     }
     hasBeenEdited = true;
 }
@@ -68,6 +69,7 @@ function saved(){
     hasBeenEdited = false;
     window.onbeforeunload = null;
     render.status(<span></span>);
+    document.getElementById("favicon").setAttribute('href', 'favicon.png');
 }
 
 function home(path){
