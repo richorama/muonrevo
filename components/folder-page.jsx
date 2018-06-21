@@ -16,7 +16,7 @@ var Files = React.createClass({
                     style = "active"
                 }
 
-                return <tr key={file.id} className={style} ><td>
+                return <tr key={file.id} className={style} ><td onClick={this.props.onClick.bind(null, file)} style={{cursor:"pointer"}}>
                     <a href="javascript:void(0);" onClick={this.props.onClick.bind(null, file)}>
                         <strong>{toDisplayName(file.name)}</strong>
                         <p className="text-muted">{prettyDate(file.client_modified)}</p>
