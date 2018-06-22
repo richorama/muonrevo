@@ -16,8 +16,27 @@ This will then create a folder under 'Apps' in your dropbox account.
 
 The editor will then use this to store all the entries you write.
 
-
 Try is here https://richorama.github.io/muonrevo/
+
+## Building the UI
+
+Please ensure a recent version of the node.js is installed.
+
+The run these commands to install the dependencies, and build the UI.
+
+```
+$ npm install
+$ npm run build
+```
+
+You can test the application by running it locally on port 8080.
+
+I uses the npm module 'static' on the cli:
+
+```
+$ npm install -g node-static
+$ static
+```
 
 ## License
 
