@@ -243,6 +243,11 @@ routie('/edit*', path => {
         }).catch(handleError);
     };
 
+    saveCalled = function(){
+        if (hasRequestExpired(myReqId)) return;
+        saveContinue();
+    }
+
     var fileContent;
     var updateContent = newContent => {
         fileContent = newContent;
@@ -618,3 +623,13 @@ dbxUtil.on("user", user => {
 
 // do this after all the routes have been set
 routie.reload();
+
+
+var saveCalled = null;
+
+window.addEventListener("keydown", function (e) {
+    if((e.ctrlKey || e.metaKey) && e.key === "s" ){
+        e.preventDefault();
+        if (saveCalled) saveCalled();
+    }
+});
