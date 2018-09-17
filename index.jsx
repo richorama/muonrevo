@@ -115,11 +115,11 @@ function home(path){
         render.loading();
         dbx.filesSearch({path:lastPath, query:term, mode:'filename_and_content' }).then(results => {
             //filesData.entries = results.matches.map(match => match.metadata);
-            renderPage(results.matches.map(match => match.metadata));
+            renderPage(results.matches.map(match => match.metadata), term);
         }).catch(handleError);
     });
   
-    var renderPage = (search) => {
+    var renderPage = (search, term) => {
         if (hasRequestExpired(myReqId)) return;
 
         var files = filesData.entries;
@@ -195,7 +195,7 @@ function home(path){
         }
 
 
-        render(<FolderPage path={path} files={files} fileContent={fileContent} loadFile={loadFile} /> , menu, true);
+        render(<FolderPage path={path} files={files} fileContent={fileContent} loadFile={loadFile} searchTerm={term} /> , menu, true);
     };
 }
 

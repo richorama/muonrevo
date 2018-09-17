@@ -7,7 +7,7 @@ var renderContent = require('../lib/renderContent');
 
 var Files = React.createClass({
     render:function(){
-        return <Panel title="Entries" noPadding={true}>
+        return <Panel title={this.props.title ? `"${this.props.title}" Results` : "Entries"} noPadding={true}>
             <div style={{overflow:"auto", height:this.props.height}}>
             <table className="table"><tbody>
             {this.props.files.filter(x => x[".tag"] === "file").reverse().map(file => {
@@ -85,6 +85,7 @@ module.exports = React.createClass({
                 <div className="col-md-3">
                     <Files 
                         height={height}
+                        title={this.props.searchTerm}
                         files={this.props.files} 
                         onClick={this.onClick} 
                         selectedFile={this.state.selectedFile} />
