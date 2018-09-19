@@ -1,7 +1,6 @@
 var React = require('react');
 var ReactDom = require('react-dom');
 var Menu = require('./menu.jsx');
-var routie = require('../lib/routie');
 var Loading = require('./loading.jsx');
 var Search = require('./search.jsx');
 

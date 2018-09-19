@@ -1,5 +1,4 @@
 var React = require('react');
-var Page = require('./page.jsx')
 
 module.exports = React.createClass({
     render:function(){
