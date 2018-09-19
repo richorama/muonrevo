@@ -7,6 +7,7 @@ var storage = require('../lib/storage');
 module.exports = React.createClass({
 
     getInitialState:function(){
+        this.content = this.props.fileContent || "";
         return {
             height : window.innerHeight - 160
         }
@@ -14,6 +15,7 @@ module.exports = React.createClass({
 
     handleChange : function(value){
         this.props.onUpdate({content : value});
+        this.content = value;
     },
 
     handleEditorMount:function(editor){
@@ -41,7 +43,7 @@ module.exports = React.createClass({
                 <div>
                     <Monaco
                         height={this.state.height}
-                        value={this.props.fileContent || ""}
+                        value={this.content}
                         theme={storage.get("editor-theme") || "vs"}
                         language="markdown"
                         options={{selectOnLineNumbers: true, lineNumbers:false, renderLineHighlight : "none", fontSize:18}}
