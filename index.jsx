@@ -117,6 +117,8 @@ function home(path){
         }).catch(handleError);
     });
   
+    
+
     var renderPage = (search, term) => {
         if (hasRequestExpired(myReqId)) return;
 
@@ -192,7 +194,7 @@ function home(path){
     
         }
 
-
+        escCalled = renderPage;
         render(<FolderPage path={path} files={files} fileContent={fileContent} loadFile={loadFile} searchTerm={term} /> , menu, true);
     };
 }
@@ -624,10 +626,15 @@ routie.reload();
 
 
 var saveCalled = null;
+var escCalled = null;
 
 window.addEventListener("keydown", function (e) {
-    if((e.ctrlKey || e.metaKey) && e.key === "s" ){
+    console.log(e);
+    if ((e.ctrlKey || e.metaKey) && e.key === "s" ){
         e.preventDefault();
         if (saveCalled) saveCalled();
+    } else if (e.key === "Escape"){
+        e.preventDefault();
+        if (escCalled) escCalled();
     }
 });
