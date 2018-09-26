@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.jsx",
   "scripts": {
-    "fastbuild" : "browserify -t babelify index.jsx -g [ envify --NODE_ENV development ] > ./dist/muonrevo.min.js",
+    "fastbuild": "browserify -t babelify index.jsx -g [ envify --NODE_ENV development ] > ./dist/muonrevo.min.js",
     "build": "npm run lint && npm run test && npm run browserify",
     "lint": "eslint . --ext .js --ext .jsx",
     "test": "mocha",
@@ -14,6 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "dropbox": "^2.5.7",
+    "eventthing": "^1.0.7",
     "humanize-duration": "^3.10.0",
     "marked": "^0.3.12",
     "node-emoji": "^1.8.1",

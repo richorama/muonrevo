@@ -13,6 +13,10 @@ module.exports = React.createClass({
         }
     },
 
+    componentDidUpdate:function(prevProps){
+        if (prevProps.fullscreen !== this.props.fullscreen) this.handleResize();
+    },
+
     handleChange : function(value){
         this.props.onUpdate({content : value});
         this.content = value;
@@ -31,16 +35,34 @@ module.exports = React.createClass({
     },
 
     handleResize:function(){
+        if (this.props.fullscreen){
+            this.setState({
+                height : window.innerHeight
+            }, () => this.editor.layout());    
+            return;
+        }
         this.setState({
             height : window.innerHeight - 160
         }, () => this.editor.layout());
     },
 
+    getStyle : function(){
+        if (this.props.fullscreen){
+            return {
+                position: "fixed",
+                top: 0,
+                zIndex: 10000,
+                left: 0,
+                width:window.innerWidth
+            };
+        }
+        return {};
+    },
 
     render:function(){
         return <Page>
             <Panel title={toDisplayName(this.props.fileName)} noPadding={true}>
-                <div>
+                <div style={this.getStyle()}>
                     <Monaco
                         height={this.state.height}
                         value={this.content}

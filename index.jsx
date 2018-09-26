@@ -15,6 +15,7 @@ var Settings = require('./components/settings-page.jsx');
 var ConfirmRefirectPage = require('./components/confirm-redirect-page.jsx');
 var HistoryPage = require('./components/history-page.jsx');
 var Notification = require('./components/notification.jsx');
+var eventThing = require('eventthing');
 
 var lastPath = "";
 routie('', home);
@@ -75,6 +76,7 @@ function home(path){
     setTitle('MuonRevo');
     var myReqId = getRequestId();
 
+    eventThing.clearAll();
     lastPath = path || "";
     render.loading();
 
@@ -193,8 +195,7 @@ function home(path){
             })
     
         }
-
-        escCalled = renderPage;
+        eventThing.on("escape", renderPage);
         render(<FolderPage path={path} files={files} fileContent={fileContent} loadFile={loadFile} searchTerm={term} /> , menu, true);
     };
 }
@@ -205,10 +206,12 @@ routie('/edit*', path => {
     render.loading();
     var dbx = dbxUtil.getDbx();
 
+    eventThing.clearAll();
     var mode = "edit";
     var revisions;
     var fileName;
     var pathDisplay;
+    var fullscreen = false;
     var save = () => {
         showNotification("save", "SAVING...");
         render.loading();
@@ -243,10 +246,15 @@ routie('/edit*', path => {
         }).catch(handleError);
     };
 
-    saveCalled = function(){
+    eventThing.on("ctrl-s", () => {
         if (hasRequestExpired(myReqId)) return;
         saveContinue();
-    }
+    });
+
+    eventThing.on("escape", () => {
+        fullscreen = false;
+        renderPage();
+    });
 
     var fileContent;
     var updateContent = newContent => {
@@ -345,6 +353,15 @@ routie('/edit*', path => {
                 active : mode=="preview"
             },
             {
+                name: "Full Screen",
+                onClick:_=> {
+                    fullscreen = true
+                    renderPage();
+                },
+                icon:"fa-expand",
+                active : false
+            },            
+            {
                 name: "Revisions",
                 onClick:_=> {
                     mode = "history"
@@ -374,7 +391,7 @@ routie('/edit*', path => {
         }
 
         if (mode == "edit"){
-            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => updateContent(newValue.content)} /> , menu);
+            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => updateContent(newValue.content)} fullscreen={fullscreen} /> , menu);
         } 
         if (mode == "preview"){
             render(<PreviewPage fileContent={fileContent} fileName={fileName} /> , menu);
@@ -390,6 +407,7 @@ routie('/new-page*', (path) => {
     setTitle('New Entry');
     saved();
     var myReqId = getRequestId();
+    eventThing.clearAll();
     var dbx = dbxUtil.getDbx();
     var rev;
 
@@ -490,6 +508,7 @@ routie('/new-page*', (path) => {
 routie('/new-folder*', path => {
     setTitle('New Folder');
     saved();
+    eventThing.clearAll();
     var dbx = dbxUtil.getDbx();
     var name = ""
     var createFolder = () => {
@@ -524,6 +543,7 @@ routie('/new-folder*', path => {
 routie('/delete*', path => {
     setTitle('Confirm Delete');
     saved();
+    eventThing.clearAll();
     var dbx = dbxUtil.getDbx();
 
     var deleteFile = () => {
@@ -557,7 +577,8 @@ routie('/delete*', path => {
 routie('/settings', () => {
     setTitle('Settings');
     saved();
-    var dbx = dbxUtil.getDbx();
+    eventThing.clearAll();
+    dbxUtil.getDbx();
     var save = () => {
         if(state.theme){
             storage.put("editor-theme", state.theme)
@@ -591,6 +612,7 @@ routie('/settings', () => {
 routie('/login', ()=>{
     var url = dbxUtil.getLoginUrl();
     saved();
+    eventThing.clearAll();
     render(<ConfirmRefirectPage url={url} />, []);
 });
 
@@ -619,22 +641,15 @@ dbxUtil.on("user", user => {
     ReactDOM.render(<UserPanel user={user} />, document.getElementById("user-content"));
 });
 
-
-
 // do this after all the routes have been set
 routie.reload();
 
-
-var saveCalled = null;
-var escCalled = null;
-
 window.addEventListener("keydown", function (e) {
-    console.log(e);
     if ((e.ctrlKey || e.metaKey) && e.key === "s" ){
         e.preventDefault();
-        if (saveCalled) saveCalled();
+        eventThing.fire("ctrl-s");
     } else if (e.key === "Escape"){
         e.preventDefault();
-        if (escCalled) escCalled();
+        eventThing.fire("escape");
     }
 });
