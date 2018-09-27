@@ -211,7 +211,6 @@ routie('/edit*', path => {
     var revisions;
     var fileName;
     var pathDisplay;
-    var fullscreen = false;
     var save = () => {
         showNotification("save", "SAVING...");
         render.loading();
@@ -249,11 +248,6 @@ routie('/edit*', path => {
     eventThing.on("ctrl-s", () => {
         if (hasRequestExpired(myReqId)) return;
         saveContinue();
-    });
-
-    eventThing.on("escape", () => {
-        fullscreen = false;
-        renderPage();
     });
 
     var fileContent;
@@ -355,8 +349,7 @@ routie('/edit*', path => {
             {
                 name: "Full Screen",
                 onClick:_=> {
-                    fullscreen = true
-                    renderPage();
+                    eventThing.fire("fullscreen");
                 },
                 icon:"fa-expand",
                 active : false
@@ -391,7 +384,7 @@ routie('/edit*', path => {
         }
 
         if (mode == "edit"){
-            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => updateContent(newValue.content)} fullscreen={fullscreen} /> , menu);
+            render(<EditPage fileContent={fileContent} fileName={fileName} onUpdate={newValue => updateContent(newValue.content)} /> , menu);
         } 
         if (mode == "preview"){
             render(<PreviewPage fileContent={fileContent} fileName={fileName} /> , menu);
@@ -490,7 +483,13 @@ routie('/new-page*', (path) => {
                 },
                 icon:"fa-eye",
                 active : !editMode
-            }
+            },
+            {
+                name: "Full Screen",
+                onClick:_=> eventThing.fire("fullscreen"),
+                icon:"fa-expand",
+                active : false
+            }            
         ];
 
         
