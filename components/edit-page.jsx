@@ -57,13 +57,6 @@ module.exports = React.createClass({
             return {
                 width:window.innerWidth
             };
-            return {
-                position: "fixed",
-                top: 0,
-                zIndex: 10000,
-                left: 0,
-                width:window.innerWidth
-            };
         }
         return {};
     },
