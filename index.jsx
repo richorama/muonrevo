@@ -352,7 +352,8 @@ routie('/edit*', path => {
                     eventThing.fire("fullscreen");
                 },
                 icon:"fa-expand",
-                active : false
+                active : false,
+                show : () => mode == "preview" || mode == "edit"
             },            
             {
                 name: "Revisions",

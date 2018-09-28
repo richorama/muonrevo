@@ -24,7 +24,11 @@ var HeaderSection = React.createClass({
 module.exports = React.createClass({
     render:function(){
         return <ul key="menu" className="sidebar-menu">
-            {this.props.menu.map(x => {
+            {this.props.menu.filter(x => {
+                if (x.show) return x.show();
+                return true;
+            }).map(x => {
+                
                 if (x.title){
                     return <HeaderSection key={x.name} title={x.title} />
                 } else if (x.onClick){
