@@ -15,6 +15,13 @@ describe("humanize", () => {
 
         done();
     });
+
+    it("displays a timespan for a day", done => {
+        if (humanize(addDays(-1)) !== "1 day") return done("format is incorrect");
+
+        done();
+    });
+
 });
 
 describe("storage", () => {
@@ -68,3 +75,8 @@ describe("renderContent", ()=> {
 
 });
 
+function addDays(days) {
+    var date = new Date();
+    date.setDate(date.getDate() + days);
+    return date;
+}
