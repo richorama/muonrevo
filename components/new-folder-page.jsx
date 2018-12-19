@@ -1,34 +1,42 @@
-var React = require('react');
-var Page = require('./page.jsx');
-var Panel = require('./panel.jsx');
+const React = require('react')
+const Page = require('./page.jsx')
+const Panel = require('./panel.jsx')
 
-module.exports = React.createClass({
-    getInitialState:function(){
-        return {title:""};
-    },
+module.exports = class extends React.Component {
+  constructor(props) {
+    super(props)
 
-    updateParent:function(){
-        this.props.onUpdate(this.state)
-    },
+    this.state = { title: '' }
+    this.updateParent = this.updateParent.bind(this)
+    this.handleTitleChange = this.handleTitleChange.bind(this)
+  }
 
-    handleTitleChange:function(){
-        this.setState({title:this.refs.title.value}, this.updateParent);
-    },
+  updateParent() {
+    this.props.onUpdate(this.state)
+  }
 
-    render:function(){
-        
-        return <Page>
-            <Panel title="Add a new folder">
-                <div>
+  handleTitleChange() {
+    this.setState({ title: this.refs.title.value }, this.updateParent)
+  }
 
-                    <div>
-                        <input className="form-control input-lg" type="text" placeholder="Enter a folder name..." value={this.state.title} onChange={this.handleTitleChange} ref="title" />
-                    </div>
-
-                 
-                </div>
-            </Panel>
-        </Page>
-    }
-});
-
+  render() {
+    return (
+      <Page>
+        <Panel title="Add a new folder">
+          <div>
+            <div>
+              <input
+                className="form-control input-lg"
+                type="text"
+                placeholder="Enter a folder name..."
+                value={this.state.title}
+                onChange={this.handleTitleChange}
+                ref="title"
+              />
+            </div>
+          </div>
+        </Panel>
+      </Page>
+    )
+  }
+}

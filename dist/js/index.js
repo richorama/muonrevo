@@ -259,7 +259,7 @@ getDiagram(settings.projectId, settings.diagramId, function (err, data) {
 
 var React = require('react');
 
-module.exports = React.createClass({
+module.exports = class extends React.Component {
     displayName: "exports",
 
 
@@ -302,7 +302,7 @@ module.exports = React.createClass({
 var React = require('react');
 var eventthing = require('eventthing');
 
-module.exports = React.createClass({
+module.exports = class extends React.Component {
     displayName: 'exports',
 
 
@@ -484,7 +484,7 @@ module.exports = React.createClass({
 var React = require('react');
 var eventthing = require('eventthing');
 
-module.exports = React.createClass({
+module.exports = class extends React.Component {
     displayName: 'exports',
 
 
@@ -557,7 +557,7 @@ var types = {
     polyline: PolyLine
 };
 
-var Annotations = React.createClass({
+var Annotations = class extends React.Component {
     displayName: 'Annotations',
 
     isDown: false,
@@ -704,7 +704,7 @@ var eventthing = require('eventthing');
 var DisplayForm = require('./display-form.jsx');
 var Tabs = require('./tabs.jsx');
 
-module.exports = React.createClass({
+module.exports = class extends React.Component {
     displayName: 'exports',
 
     getInitialState: function getInitialState() {
@@ -779,7 +779,7 @@ module.exports = React.createClass({
 
 var React = require('react');
 
-module.exports = React.createClass({
+module.exports = class extends React.Component {
 	displayName: "exports",
 
 	getInitialState: function getInitialState() {
@@ -12754,7 +12754,7 @@ function isValidOwner(object) {
  *
  * Refs are available when mounted and updated during reconciliation.
  *
- *   var MyComponent = React.createClass({
+ *   var MyComponent = class extends React.Component {
  *     render: function() {
  *       return (
  *         <div onClick={this.handleClick}>
@@ -18387,7 +18387,7 @@ var injectedMixins = [];
  * your new class to `React.createClass`. The only requirement of your class
  * specification is that you implement a `render` method.
  *
- *   var MyComponent = React.createClass({
+ *   var MyComponent = class extends React.Component {
  *     render: function() {
  *       return <div>Hello World</div>;
  *     }
@@ -20424,7 +20424,7 @@ var warning = require('fbjs/lib/warning');
  * supplied to React components. Example usage:
  *
  *   var Props = require('ReactPropTypes');
- *   var MyArticle = React.createClass({
+ *   var MyArticle = class extends React.Component {
  *     propTypes: {
  *       // An optional string prop named "description".
  *       description: Props.string,
@@ -20446,7 +20446,7 @@ var warning = require('fbjs/lib/warning');
  * Each and every declaration produces a function with the same signature. This
  * allows the creation of custom validation functions. For example:
  *
- *  var MyLink = React.createClass({
+ *  var MyLink = class extends React.Component {
  *    propTypes: {
  *      // An optional string or URI prop named "href".
  *      href: function(props, propName, componentName) {
@@ -21372,7 +21372,7 @@ function compressLine(line) {
     return newLine;
 }
 
-var PolyRender = React.createClass({
+var PolyRender = class extends React.Component {
     displayName: 'PolyRender',
 
     getInitialState: function getInitialState() {
