@@ -1,2 +1,4 @@
 dist/*
 vs/*
+vendor/*
+*.min.js
