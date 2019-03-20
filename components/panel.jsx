@@ -5,7 +5,7 @@ module.exports = class extends React.Component {
     if (this.props.children.length) {
       var body = this.props.children[0]
       var footer = (
-        <div className="box-footer clearfix">{this.props.children[1]}</div>
+        <div className="card-footer clearfix">{this.props.children[1]}</div>
       )
     } else {
       var body = this.props.children
@@ -13,15 +13,13 @@ module.exports = class extends React.Component {
     }
 
     return (
-      <div className={`box ${this.props.boxClass ? this.props.boxClass : ''}`}>
-        <div className="box-header with-border">
-          <h3 className="box-title">
-            {this.props.title}
-            <small style={{ marginLeft: '10px' }}>{this.props.subTitle}</small>
-          </h3>
+      <div className={`card ${this.props.boxClass ? this.props.boxClass : ''}`}>
+        <div className="card-header">
+          {this.props.title}
+          <small style={{ marginLeft: '10px' }}>{this.props.subTitle}</small>
         </div>
         <div
-          className={'box-body ' + (this.props.noPadding ? 'no-padding' : '')}
+          className="card-body" style={(this.props.noPadding ? {padding:0} : {})}
         >
           {body}
         </div>

@@ -1,91 +1,68 @@
 <!DOCTYPE html>
 <html>
-<head>
-        <meta charset="utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
-        />
-        <meta name="author" content="Richard Astbury" />
-        <title>MuonRevo</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
+    />
+    <meta name="author" content="Richard Astbury" />
+    <title>MuonRevo</title>
 
-        <!-- Icons-->
-        <link
-          href="vendors/@coreui/icons/css/coreui-icons.min.css"
-          rel="stylesheet"
-        />
-        <link href="vendors/flag-icon-css/css/flag-icon.min.css" rel="stylesheet" />
-        <link
-          href="vendors/font-awesome/css/font-awesome.min.css"
-          rel="stylesheet"
-        />
+    <!-- Icons-->
+    <link
+      href="vendors/@coreui/icons/css/coreui-icons.min.css"
+      rel="stylesheet"
+    />
+    <link href="vendors/flag-icon-css/css/flag-icon.min.css" rel="stylesheet" />
+    <link
+      href="vendors/font-awesome/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
 
-        <!-- Main styles for this application-->
-        <link href="css/style.css" rel="stylesheet" />
-        <link href="vendors/pace-progress/css/pace.min.css" rel="stylesheet" />
+    <!-- Main styles for this application-->
+    <link href="css/style.css" rel="stylesheet" />
+    <link href="vendors/pace-progress/css/pace.min.css" rel="stylesheet" />
 
-
-
-
+    <link rel="icon" href="favicon.png" type="image/png" id="favicon" />
 
     <style>
-        .leaflet-control-attribution {
-            display:none;
-        }
+      .circle {
+        width: 40px;
+        text-align: center;
+        height: 40px;
+        border-radius: 50%;
+        background: #367fa9;
+        display: block;
+        float: left;
+        padding-top: 7px;
+        margin-right: 8px;
+        margin-top: -6px;
+      }
 
-        .circle {
-            width: 40px;
-            text-align: center;
-            height: 40px;
-            border-radius: 50%;
-            background: #367fa9;
-            display: block;
-            float: left;
-            padding-top: 7px;
-            margin-right: 8px;
-            margin-top: -6px;
-        }
+      .circle > i {
+        color: white;
+      }
 
-        .circle > i {
-            color:white;
-        }
-
-        body {
-            background: #ecf0f5;
-        }
-
-        .active {
-            background-color: #f5f5f5 !important;
-        }
+      .active {
+        background-color: #f5f5f5 !important;
+      }
     </style>
- </head>
- <body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
-        <header class="app-header navbar">
-                <button
-                  class="navbar-toggler sidebar-toggler d-lg-none mr-auto"
-                  type="button"
-                  data-toggle="sidebar-show"
-                >
-                  <span class="navbar-toggler-icon"></span>
-                </button>
-                <a class="navbar-brand" href="#">
-                  <img
-                    class="navbar-brand-full"
-                    src="img/brand/logo.svg"
-                    width="89"
-                    height="25"
-                    alt="CoreUI Logo"
-                  />
-                  <img
-                    class="navbar-brand-minimized"
-                    src="img/brand/sygnet.svg"
-                    width="30"
-                    height="30"
-                    alt="CoreUI Logo"
-                  />
-                </a>
-                <!--
+  </head>
+  <body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
+    <header class="app-header navbar">
+      <button
+        class="navbar-toggler sidebar-toggler d-lg-none mr-auto"
+        type="button"
+        data-toggle="sidebar-show"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <a class="navbar-brand" href="#">
+          <i class="fa fa-file-text" style="padding-right:10px;"></i> MuonRevo</span>
+      </a>
+      <!--
                 <ul class="nav navbar-nav d-md-down-none">
                   <li class="nav-item px-3">
                     <a class="nav-link" href="#">Dashboard</a>
@@ -99,63 +76,56 @@
                 </ul>
                 -->
 
-                <div class="navbar-custom-menu" id="user-content">
-                    </div>
-    
-                    <div class="navbar-custom-menu" id="notification-content">
-                        
-                    </div>
-    
-                    <div class="navbar-custom-menu" id="status-content">
-                        
-                    </div>
+      <ul class="nav navbar-nav ml-auto">
+        <li class="nav-item">
+          <div class="navbar-custom-menu" id="user-content"></div>
+        </li>
+      </ul>
 
+      <div class="navbar-custom-menu" id="notification-content"></div>
 
-               
-              </header>
- 
- 
- 
- 
-    <div class="wrapper">
+      <div class="navbar-custom-menu" id="status-content"></div>
 
-        <header class="main-header">
+    </header>
+    <div class="app-body">
+      <header class="main-header" style="display:none">
+        <a href="#" class="logo">
+          <span class="logo-mini"
+            ><i class="fa fa-file-text"></i> MuonRevo</span
+          >
+          <span class="logo-lg"><i class="fa fa-file-text"></i> MuonRevo</span>
+        </a>
 
-            <a href="#" class="logo">
-                <span class="logo-mini"><i class="fa fa-file-text"></i> MuonRevo</span>
-                <span class="logo-lg"><i class="fa fa-file-text"></i> MuonRevo</span>
-            </a>
+        <nav class="navbar navbar-static-top">
+          <div class="navbar-custom-menu" id="user-content"></div>
 
-            <nav class="navbar navbar-static-top">
-                <div class="navbar-custom-menu" id="user-content">
-                </div>
+          <div class="navbar-custom-menu" id="notification-content"></div>
 
-                <div class="navbar-custom-menu" id="notification-content">
-                    
-                </div>
+          <div class="navbar-custom-menu" id="status-content"></div>
+        </nav>
+      </header>
 
-                <div class="navbar-custom-menu" id="status-content">
-                    
-                </div>
-            </nav>
-        </header>
-
-        <aside class="main-sidebar">
-            <section class="sidebar">
-                <div id="menu">
-                    <ul class="sidebar-menu">
-                    </ul>
-                </div>
-            </section>
-        </aside>
-
-        <div class="content-wrapper" id="content">
-            <section class="content" style="height:100vh">
-                <span style="padding-top: 25px;"><span><i class="fa fa-spinner fa-pulse fa-fw"></i> Loading...</span></span>
-            </section>
+      <section class="sidebar">
+        <div id="menu">
+          <ul class="sidebar-menu"></ul>
         </div>
+      </section>
+
+      <main class="main">
+        <div class="container-fluid">
+          <div class="content-wrapper" id="content">
+            <section class="content" style="height:100vh">
+              <span style="padding-top: 25px;"
+                ><span
+                  ><i class="fa fa-spinner fa-pulse fa-fw"></i> Loading...</span
+                ></span
+              >
+            </section>
+          </div>
+        </div>
+      </main>
     </div>
 
     <script src="dist/muonrevo.min.js"></script>
-</body>
+  </body>
 </html>

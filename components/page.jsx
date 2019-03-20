@@ -20,7 +20,7 @@ const Breadcrumbs = class extends React.Component {
     return (
       <ol className="breadcrumb" style={{ background: 'white' }}>
         {directories.map(x => (
-          <li>
+          <li className="breadcrumb-item">
             <a href={`#/path${x.path}`}>
               <i className={'fa ' + x.icon} /> {x.name}
             </a>
@@ -37,11 +37,7 @@ module.exports = class extends React.Component {
       <div>
         <If test={this.props.path}>
           <section className="content-header">
-            <h1>
-              <small>
-                <Breadcrumbs path={this.props.path} />
-              </small>
-            </h1>
+            <Breadcrumbs path={this.props.path} />
           </section>
         </If>
         <section className="content" style={{ position: 'relative' }}>

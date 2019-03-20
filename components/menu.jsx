@@ -5,10 +5,10 @@ const MenuSection = class extends React.Component {
     return (
       <li
         key={this.props.name}
-        className={'treeview ' + (this.props.active ? 'active' : '')}
+        className="nav-item"
       >
-        <a href={this.props.path}>
-          <i className={`fa ${this.props.icon || 'bug'}`} /> {this.props.name}
+        <a href={this.props.path} className={'nav-link ' + (this.props.active ? 'active' : '')}>
+          <i className={`nav-icon fa ${this.props.icon || 'bug'}`} /> {this.props.name}
         </a>
       </li>
     )
@@ -20,10 +20,10 @@ const ClickSection = class extends React.Component {
     return (
       <li
         key={this.props.name}
-        className={'treeview ' + (this.props.active ? 'active' : '')}
+        className={'nav-item'}
       >
-        <a href="javascript:void(0);" onClick={this.props.onClick}>
-          <i className={`fa ${this.props.icon || 'bug'}`} /> {this.props.name}
+        <a className={'nav-link ' + (this.props.active ? 'active' : '')} href="javascript:void(0);" onClick={this.props.onClick}>
+          <i className={`nav-icon fa ${this.props.icon || 'bug'}`} /> {this.props.name}
         </a>
       </li>
     )
@@ -32,9 +32,8 @@ const ClickSection = class extends React.Component {
 
 const HeaderSection = class extends React.Component {
   render() {
-    var key = 0
     return (
-      <li key={this.props.name} className="header">
+      <li key={this.props.name} className="nav-title">
         {this.props.title}
       </li>
     )
@@ -44,7 +43,7 @@ const HeaderSection = class extends React.Component {
 module.exports = class extends React.Component {
   render() {
     return (
-      <ul key="menu" className="sidebar-menu">
+      <ul key="menu" className="nav">
         {this.props.menu
           .filter(x => {
             if (x.show) return x.show()
