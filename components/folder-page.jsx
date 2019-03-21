@@ -37,7 +37,7 @@ let Files = class extends React.Component {
                           onClick={this.props.onClick.bind(null, file)}
                         >
                           <strong>{toDisplayName(file.name)}</strong>
-                          <p className="text-muted">
+                          <p className="text-muted" style={{marginBottom:0}}>
                             {prettyDate(file.client_modified)}
                           </p>
                         </a>
