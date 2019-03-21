@@ -1,4 +1,5 @@
 const React = require('react')
+const Fragment = React.Fragment
 const If = require('./if-else.jsx')
 
 const Breadcrumbs = class extends React.Component {
@@ -39,10 +40,13 @@ module.exports = class extends React.Component {
           <section className="content-header">
             <Breadcrumbs path={this.props.path} />
           </section>
+          <div style={{ paddingTop: 25 }} />
         </If>
-        <section className="content" style={{ position: 'relative' }}>
-          {this.props.children}
-        </section>
+        <div className="container-fluid">
+          <section className="content" style={{ position: 'relative' }}>
+            {this.props.children}
+          </section>
+        </div>
       </div>
     )
   }

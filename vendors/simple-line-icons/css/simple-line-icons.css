@@ -89,8 +89,8 @@
 .icon-handbag,
 .icon-globe-alt,
 .icon-globe,
+.icon-folder-alt-alt,
 .icon-folder-alt,
-.icon-folder,
 .icon-film,
 .icon-feed,
 .icon-drop,
@@ -449,10 +449,10 @@
 .icon-globe:before {
   content: "\e037";
 }
-.icon-folder-alt:before {
+.icon-folder-alt-alt:before {
   content: "\e039";
 }
-.icon-folder:before {
+.icon-folder-alt:before {
   content: "\e089";
 }
 .icon-film:before {

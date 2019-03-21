@@ -56,7 +56,7 @@ var hasBeenEdited = false
 function edited() {
   if (!hasBeenEdited) {
     window.onbeforeunload = () => true
-    render.status(<Notification message="EDITED" icon="circle" />)
+    render.status(<Notification message="EDITED" icon="note" />)
     document.getElementById('favicon').setAttribute('href', 'favicon-edit.png')
   }
   hasBeenEdited = true
@@ -143,7 +143,7 @@ function home(path) {
         {
           name: 'Clear Search',
           onClick: () => renderPage(),
-          icon: 'fa-times'
+          icon: 'icon-close'
         }
       ]
     } else {
@@ -151,12 +151,12 @@ function home(path) {
         {
           name: 'New Entry',
           path: '#/new-page' + (path || ''),
-          icon: 'fa-file-text'
+          icon: 'icon-doc'
         },
         {
           name: 'New Folder',
           path: '#/new-folder' + (path || ''),
-          icon: 'fa-folder-open'
+          icon: 'icon-folder-alt'
         }
       ]
 
@@ -168,7 +168,7 @@ function home(path) {
         menu.push({
           name: 'Edit',
           path: '#/edit' + selectedFile.path_lower,
-          icon: 'fa-pencil-square-o'
+          icon: 'icon-note'
         })
       }
 
@@ -185,7 +185,7 @@ function home(path) {
         menu.push({
           name: 'Parent Folder',
           path: '#/path' + getParent(path),
-          icon: 'fa-level-up'
+          icon: 'icon-arrow-up'
         })
       }
 
@@ -196,7 +196,7 @@ function home(path) {
         menu.push({
           name: 'Delete Folder',
           onClick: deleteFolder,
-          icon: 'fa-trash'
+          icon: 'icon-trash'
         })
       }
       filesData.entries
@@ -206,7 +206,7 @@ function home(path) {
           menu.push({
             name: x.name,
             path: '#/path' + x.path_lower,
-            icon: 'fa-folder'
+            icon: 'icon-folder-alt'
           })
         })
     }
@@ -237,7 +237,7 @@ routie('/edit*', path => {
   var fileName
   var pathDisplay
   var save = () => {
-    showNotification('save', 'SAVING...')
+    showNotification('cloud-upload', 'SAVING...')
     render.loading()
     dbx
       .filesUpload({
@@ -355,17 +355,17 @@ routie('/edit*', path => {
       {
         name: 'Save & Close',
         onClick: save,
-        icon: 'fa-save'
+        icon: 'icon-cloud-upload'
       },
       {
         name: 'Save',
         onClick: saveContinue,
-        icon: 'fa-save'
+        icon: 'icon-cloud-upload'
       },
       {
         name: 'Cancel',
         path: `#/path${getParent(path)}`,
-        icon: 'fa-times'
+        icon: 'icon-close'
       },
       {
         title: 'VIEW'
@@ -376,7 +376,7 @@ routie('/edit*', path => {
           mode = 'edit'
           renderPage()
         },
-        icon: 'fa-edit',
+        icon: 'icon-note',
         active: mode == 'edit'
       },
       {
@@ -385,7 +385,7 @@ routie('/edit*', path => {
           mode = 'preview'
           renderPage()
         },
-        icon: 'fa-eye',
+        icon: 'icon-eye',
         active: mode == 'preview'
       },
       {
@@ -393,7 +393,7 @@ routie('/edit*', path => {
         onClick: _ => {
           eventThing.fire('fullscreen')
         },
-        icon: 'fa-expand',
+        icon: 'icon-size-fullscreen',
         active: false,
         show: () => mode == 'preview' || mode == 'edit'
       },
@@ -405,7 +405,7 @@ routie('/edit*', path => {
           revisionContent = null
           loadRevisions()
         },
-        icon: 'fa-history',
+        icon: 'icon-docs',
         active: mode == 'history'
       },
       {
@@ -414,7 +414,7 @@ routie('/edit*', path => {
       {
         name: 'Delete',
         path: `#/delete${path}`,
-        icon: 'fa-trash'
+        icon: 'icon-trash'
       }
     ]
 
@@ -422,7 +422,7 @@ routie('/edit*', path => {
       menu.push({
         name: 'Restore Revision',
         onClick: handleRestore,
-        icon: 'fa-undo'
+        icon: 'icon-action-back'
       })
     }
 
@@ -486,7 +486,7 @@ routie('/new-page*', path => {
   }
 
   var saveContinue = () => {
-    showNotification('save', 'SAVING...')
+    showNotification('cloud-upload', 'SAVING...')
     dbx
       .filesUpload({
         path: `${path || ''}/${state.title}.md`,
@@ -516,17 +516,17 @@ routie('/new-page*', path => {
       {
         name: 'Save & Close',
         onClick: save,
-        icon: 'fa-save'
+        icon: 'icon-cloud-upload'
       },
       {
         name: 'Save',
         onClick: saveContinue,
-        icon: 'fa-save'
+        icon: 'icon-cloud-upload'
       },
       {
         name: 'Cancel',
         path: `#/path${path || ''}`,
-        icon: 'fa-times'
+        icon: 'icon-close'
       },
       {
         title: 'VIEW'
@@ -537,7 +537,7 @@ routie('/new-page*', path => {
           editMode = true
           renderPage()
         },
-        icon: 'fa-edit',
+        icon: 'icon-note',
         active: editMode
       },
       {
@@ -546,13 +546,13 @@ routie('/new-page*', path => {
           editMode = false
           renderPage()
         },
-        icon: 'fa-eye',
+        icon: 'icon-eye',
         active: !editMode
       },
       {
         name: 'Full Screen',
         onClick: _ => eventThing.fire('fullscreen'),
-        icon: 'fa-expand',
+        icon: 'icon-size-fullscreen',
         active: false
       }
     ]
@@ -606,12 +606,12 @@ routie('/new-folder*', path => {
     {
       name: 'Create',
       onClick: createFolder,
-      icon: 'fa-save'
+      icon: 'icon-cloud-upload'
     },
     {
       name: 'Cancel',
       path: `#/path${path || ''}`,
-      icon: 'fa-times'
+      icon: 'icon-close'
     }
   ]
 
@@ -642,12 +642,12 @@ routie('/delete*', path => {
     {
       name: 'Delete',
       onClick: deleteFile,
-      icon: 'fa-trash'
+      icon: 'icon-trash'
     },
     {
       name: 'Cancel',
       path: `#/edit${path || ''}`,
-      icon: 'fa-times'
+      icon: 'icon-close'
     }
   ]
 
@@ -673,12 +673,12 @@ routie('/settings', () => {
     {
       name: 'Save',
       onClick: save,
-      icon: 'fa-save'
+      icon: 'icon-cloud-upload'
     },
     {
       name: 'Cancel',
       path: `#/`,
-      icon: 'fa-times'
+      icon: 'icon-close'
     }
   ]
 

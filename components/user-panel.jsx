@@ -9,7 +9,7 @@ module.exports = class extends React.Component {
           className="img-avatar"
           alt="User Image"
         />
-        <span className="hidden-xs">{this.props.user.name.display_name}</span>
+        <span style={{display:"none"}} className="hidden-xs">{this.props.user.name.display_name}</span>
       </a>
     )
   }

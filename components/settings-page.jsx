@@ -107,13 +107,13 @@ module.exports = class extends React.Component {
               <label className="col-sm-2 control-label">About</label>
               <div className="col-sm-10">
                 <p>
-                  <i className="fa fa-twitter" /> Developed by{' '}
+                  <i className="icon-social-twitter" /> Developed by{' '}
                   <a href="https://twitter.com/richorama" target="_blank">
                     Richard Astbury
                   </a>
                 </p>
                 <p>
-                  <i className="fa fa-bug" /> Report an issue{' '}
+                  <i className="icon-support" /> Report an issue{' '}
                   <a
                     href="https://github.com/richorama/muonrevo/issues/new"
                     target="_blank"
@@ -122,7 +122,7 @@ module.exports = class extends React.Component {
                   </a>
                 </p>
                 <p>
-                  <i className="fa fa-github" /> Feel free to fork the{' '}
+                  <i className="icon-social-github" /> Feel free to fork the{' '}
                   <a
                     href="https://github.com/richorama/muonrevo/"
                     target="_blank"

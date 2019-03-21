@@ -19,7 +19,7 @@ module.exports = class extends React.Component {
             </p>
             <p>
               <a href={this.props.url} className="btn btn-lg btn-primary">
-                <i className="fa fa-dropbox" /> Log in with dropbox
+                <i className="icon-social-dropbox" /> Log in with dropbox
               </a>
             </p>
           </div>

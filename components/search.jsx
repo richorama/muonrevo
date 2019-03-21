@@ -41,9 +41,10 @@ module.exports = class extends React.Component {
               type="submit"
               name="search"
               id="search-btn"
+              style={{color:'#e4e7ea'}}
               className="btn btn-flat"
             >
-              <i className="fa fa-search" />
+              <i className="icon-magnifier" />
             </button>
           </span>
         </div>

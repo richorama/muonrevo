@@ -18,17 +18,19 @@ let Files = class extends React.Component {
               {this.props.files
                 .filter(x => x['.tag'] === 'file')
                 .reverse()
-                .map(file => {
+                .map((file, index) => {
                   var style = ''
                   if (file === this.props.selectedFile) {
-                    style = 'active'
+                    style = 'cell-active'
                   }
 
+                  const cellStyle = { cursor: 'pointer' }
+                  if (index === 0) cellStyle.borderTop = 0
                   return (
                     <tr key={file.id} className={style}>
                       <td
                         onClick={this.props.onClick.bind(null, file)}
-                        style={{ cursor: 'pointer' }}
+                        style={cellStyle}
                       >
                         <a
                           href="javascript:void(0);"
@@ -109,9 +111,9 @@ module.exports = class extends React.Component {
   }
 
   render() {
-    var height = 'calc(100vh - 150px)'
+    var height = 'calc(100vh - 155px)'
     if (this.props.path) {
-      height = 'calc(100vh - 220px)'
+      height = 'calc(100vh - 225px)'
     }
 
     return (

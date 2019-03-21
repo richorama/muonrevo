@@ -8,7 +8,7 @@ const MenuSection = class extends React.Component {
         className="nav-item"
       >
         <a href={this.props.path} className={'nav-link ' + (this.props.active ? 'active' : '')}>
-          <i className={`nav-icon fa ${this.props.icon || 'bug'}`} /> {this.props.name}
+          <i className={`nav-icon ${this.props.icon || 'bug'}`} /> {this.props.name}
         </a>
       </li>
     )
@@ -23,7 +23,7 @@ const ClickSection = class extends React.Component {
         className={'nav-item'}
       >
         <a className={'nav-link ' + (this.props.active ? 'active' : '')} href="javascript:void(0);" onClick={this.props.onClick}>
-          <i className={`nav-icon fa ${this.props.icon || 'bug'}`} /> {this.props.name}
+          <i className={`nav-icon ${this.props.icon || 'bug'}`} /> {this.props.name}
         </a>
       </li>
     )
