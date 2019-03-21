@@ -8,47 +8,32 @@ const renderContent = require('../lib/renderContent')
 let Files = class extends React.Component {
   render() {
     return (
-      <Panel
-        title={this.props.title ? `"${this.props.title}" Results` : 'Entries'}
-        noPadding={true}
-      >
-        <div style={{ overflow: 'auto', height: this.props.height }}>
-          <table className="table">
-            <tbody>
-              {this.props.files
-                .filter(x => x['.tag'] === 'file')
-                .reverse()
-                .map((file, index) => {
-                  var style = ''
-                  if (file === this.props.selectedFile) {
-                    style = 'cell-active'
+      <div style={{ overflow: 'auto', height: this.props.height }}>
+        <div className="list-group">
+          {this.props.files
+            .filter(x => x['.tag'] === 'file')
+            .reverse()
+            .map(file => {
+              return (
+                <a
+                  key={file.name}
+                  href="javascript:void(0);"
+                  onClick={this.props.onClick.bind(null, file)}
+                  className={
+                    file === this.props.selectedFile
+                      ? 'list-group-item list-group-item-action active'
+                      : 'list-group-item-action list-group-item '
                   }
-
-                  const cellStyle = { cursor: 'pointer' }
-                  if (index === 0) cellStyle.borderTop = 0
-                  return (
-                    <tr key={file.id} className={style}>
-                      <td
-                        onClick={this.props.onClick.bind(null, file)}
-                        style={cellStyle}
-                      >
-                        <a
-                          href="javascript:void(0);"
-                          onClick={this.props.onClick.bind(null, file)}
-                        >
-                          <strong>{toDisplayName(file.name)}</strong>
-                          <p className="text-muted" style={{marginBottom:0}}>
-                            {prettyDate(file.client_modified)}
-                          </p>
-                        </a>
-                      </td>
-                    </tr>
-                  )
-                })}
-            </tbody>
-          </table>
+                >
+                  <h5>{toDisplayName(file.name)}</h5>
+                  <p style={{ marginBottom: 0 }}>
+                    {prettyDate(file.client_modified)}
+                  </p>
+                </a>
+              )
+            })}
         </div>
-      </Panel>
+      </div>
     )
   }
 }
@@ -63,20 +48,21 @@ const FilePreview = class extends React.Component {
   }
   render() {
     return (
-      <Panel title={toDisplayName(this.props.file.name)} noPadding={true}>
-        <div
-          style={{
-            overflow: 'auto',
-            height: this.props.height,
-            padding: '20px'
-          }}
-        >
-          <If test={this.props.loading}>
-            <Loading />
-            <div dangerouslySetInnerHTML={this.createMarkup()} />
-          </If>
-        </div>
-      </Panel>
+      <div
+        style={{
+          overflow: 'auto',
+          height: this.props.height
+        }}
+      >
+        <If test={this.props.loading}>
+          <Loading />
+          <div className="list-group">
+            <div className="list-group-item">
+              <div dangerouslySetInnerHTML={this.createMarkup()} />
+            </div>
+          </div>
+        </If>
+      </div>
     )
   }
 }
@@ -111,34 +97,36 @@ module.exports = class extends React.Component {
   }
 
   render() {
-    var height = 'calc(100vh - 155px)'
+    var height = 'calc(100vh - 195px)'
     if (this.props.path) {
-      height = 'calc(100vh - 225px)'
+      height = 'calc(100vh - 240px)'
     }
 
     return (
       <Page path={this.props.path}>
-        <div className="row">
-          <div className="col-md-3">
-            <Files
-              height={height}
-              title={this.props.searchTerm}
-              files={this.props.files}
-              onClick={this.onClick}
-              selectedFile={this.state.selectedFile}
-            />
-          </div>
-          <div className="col-md-9">
-            <If test={this.state.selectedFile}>
-              <FilePreview
+        <Panel title="Notes">
+          <div className="row">
+            <div className="col-md-3">
+              <Files
                 height={height}
-                file={this.state.selectedFile}
-                loading={this.state.loading}
-                fileContent={this.state.fileContent}
+                title={this.props.searchTerm}
+                files={this.props.files}
+                onClick={this.onClick}
+                selectedFile={this.state.selectedFile}
               />
-            </If>
+            </div>
+            <div className="col-md-9">
+              <If test={this.state.selectedFile}>
+                <FilePreview
+                  height={height}
+                  file={this.state.selectedFile}
+                  loading={this.state.loading}
+                  fileContent={this.state.fileContent}
+                />
+              </If>
+            </div>
           </div>
-        </div>
+        </Panel>
       </Page>
     )
   }
@@ -149,7 +137,5 @@ function toDisplayName(value) {
 }
 
 function prettyDate(value) {
-  const parts = value.split('T')
-  const hourParts = parts[1].split('.')[0].split(':')
-  return `${parts[0]} ${hourParts[0]}:${hourParts[1]}`
+  return new Date(value).toLocaleString()
 }
