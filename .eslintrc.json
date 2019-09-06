@@ -5,7 +5,7 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion":8,
+        "ecmaVersion": 8,
         "ecmaFeatures": {
             "experimentalObjectRestSpread": true,
             "jsx": true
@@ -21,21 +21,21 @@
         "settings": true,
         "define": true,
         "Buffer": true,
-        "google" : true,
+        "google": true,
         "describe": true,
-        "it":true,
-        "$":true
+        "it": true,
+        "$": true
     },
     "rules": {
         "indent": "off",
         "linebreak-style": "off",
         "quotes": "off",
         "semi": "off",
-        "no-mixed-spaces-and-tabs" : "off",
-        "no-unused-vars" : "off",
+        "no-mixed-spaces-and-tabs": "off",
+        "no-unused-vars": "off",
         "no-redeclare": "off",
         "no-empty": "off",
-        "no-console":"off",
-        "no-useless-escape":"off"
+        "no-console": "off",
+        "no-useless-escape": "off"
     }
 }

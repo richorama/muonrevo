@@ -9,105 +9,19 @@
     />
     <meta name="author" content="Richard Astbury" />
     <title>MuonRevo</title>
-
-    <!-- Icons-->
-    <link
-      href="vendors/simple-line-icons/css/simple-line-icons.css"
-      rel="stylesheet"
-    />
-    <link
-      href="vendors/font-awesome/css/font-awesome.min.css"
-      rel="stylesheet"
-    />
-
-    <!-- Main styles for this application-->
-    <link href="css/style.css" rel="stylesheet" />
-
     <link rel="icon" href="favicon.png" type="image/png" id="favicon" />
-
+    <link rel="stylesheet" type="text/css" class="ui" href="css/semantic.min.css">
     <style>
-      .circle {
-        width: 40px;
-        text-align: center;
-        height: 40px;
-        border-radius: 50%;
-        background: #367fa9;
-        display: block;
-        float: left;
-        padding-top: 7px;
-        margin-right: 8px;
-        margin-top: -6px;
+      body{
+        background: #111;
+        color: silver;
+        padding: 0;
+        margin: 0;
       }
-
-      .circle > i {
-        color: white;
-      }
-
-      .cell-active {
-        background-color: #f0f3f5 !important;
-      }
-
-      .app-header {
-        background: #20a8d8;
-        border-bottom: 0;
-      }
-
-      .navbar-brand {
-        color:white;
-      }
-
-      .navbar-brand:hover {
-        color:#e4e7ea;
-      }
-      </style>
+    </style>
   </head>
-  <body class="app header-fixed sidebar-fixed aside-menu-fixed sidebar-lg-show">
-    <header class="app-header navbar">
-      <button
-        class="navbar-toggler sidebar-toggler d-lg-none mr-auto"
-        type="button"
-        data-toggle="sidebar-show"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <a class="navbar-brand" href="#">
-          <i class="icon-notebook" style="padding-right:10px;"></i> MuonRevo</span>
-      </a>
-
-      <ul class="nav navbar-nav ml-auto">
-        <li class="nav-item">
-          <div class="navbar-custom-menu" id="notification-content"></div>
-        </li>
-        <li class="nav-item">
-          <div class="navbar-custom-menu" id="status-content"></div>
-        </li>
-        <li class="nav-item">
-          <div class="navbar-custom-menu" id="user-content"></div>
-        </li>
-      </ul>
-
-    </header>
-    <div class="app-body">
-
-      <section class="sidebar">
-        <div id="menu">
-          <ul class="sidebar-menu"></ul>
-        </div>
-      </section>
-
-      <main class="main">
-
-        <div class="content-wrapper" id="content">
-          <section class="content" style="height:100vh">
-            <div style="padding: 25px;">
-              <span><i class="fa fa-spinner fa-pulse fa-fw"></i> Loading...</span>
-            </div>
-          </section>
-        </div>
-
-      </main>
-    </div>
-
+  <body>
+    <div id="content"></div>
     <script src="dist/muonrevo.min.js"></script>
   </body>
 </html>

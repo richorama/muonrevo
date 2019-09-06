@@ -17,6 +17,9 @@ var HistoryPage = require('./components/history-page.jsx')
 var Notification = require('./components/notification.jsx')
 var eventThing = require('eventthing')
 
+const Layout = require('./components/layout.jsx')
+const Sidebar = require('./components/sidebar.jsx')
+
 var lastPath = ''
 routie('', home)
 routie('/', home)
@@ -65,7 +68,7 @@ function edited() {
 function saved() {
   hasBeenEdited = false
   window.onbeforeunload = null
-  render.status(<span />)
+  //render.status(<span />)
   document.getElementById('favicon').setAttribute('href', 'favicon.png')
 }
 
@@ -211,17 +214,10 @@ function home(path) {
         })
     }
     eventThing.on('escape', renderPage)
-    render(
-      <FolderPage
-        path={path}
-        files={files}
-        fileContent={fileContent}
-        loadFile={loadFile}
-        searchTerm={term}
-      />,
-      menu,
-      true
-    )
+    render(<Layout>
+      <Sidebar />
+      <div>CONTENT</div>
+    </Layout>)
   }
 }
 

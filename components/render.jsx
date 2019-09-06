@@ -9,13 +9,8 @@ var menuElement = document.getElementById('menu');
 var notificationElement = document.getElementById('notification-content');
 var statusElement = document.getElementById('status-content');
 
-module.exports = function(jsx, menu, showSearch){
+module.exports = function(jsx){
     ReactDom.render(jsx, contentElement);
-    
-    if(showSearch){
-        return ReactDom.render(<span><Search onSearch={searchCallback} /><Menu menu={menu} /></span>, menuElement);    
-    }
-    ReactDom.render(<Menu menu={menu} />, menuElement);
 }
 
 module.exports.loading = function(){
