@@ -19,6 +19,7 @@ var eventThing = require('eventthing')
 
 const Layout = require('./components/layout.jsx')
 const Sidebar = require('./components/sidebar.jsx')
+const MainMenu = require('./components/main-menu.jsx')
 
 var lastPath = ''
 routie('', home)
@@ -215,6 +216,7 @@ function home(path) {
     }
     eventThing.on('escape', renderPage)
     render(<Layout>
+      <MainMenu />
       <Sidebar />
       <div>CONTENT</div>
     </Layout>)

@@ -6,8 +6,8 @@ module.exports = class extends React.Component {
       <div style={{ display: 'flex', height: '100vh' }}>
         <div
           style={{
-            width: 250,
-            background: '#1b1c1d',
+            width: 70,
+            background: '#282C34',
             color: 'silver',
             padding: 2,
             overflow: 'auto'
@@ -15,8 +15,19 @@ module.exports = class extends React.Component {
         >
           {this.props.children[0]}
         </div>
-        <div style={{ flex: 1, background: '#111' }}>
+        <div
+          style={{
+            width: 250,
+            background: '#21252B',
+            color: 'silver',
+            padding: 0,
+            overflow: 'auto'
+          }}
+        >
           {this.props.children[1]}
+        </div>
+        <div style={{ flex: 1, background: '#21252B' }}>
+          {this.props.children[2]}
         </div>
       </div>
     )

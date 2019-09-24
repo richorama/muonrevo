@@ -4,8 +4,10 @@ const dbxUtil = require('../lib/dbxUtils')
 
 const RenderList = props => (
   <Frag>
-    <div style={{ fontWeight: 'bold', padding: 8 }}>{props.title}</div>
-    <div style={{ background: '#111', padding: 4 }}>
+    <div style={{ fontWeight: 'bold', padding: 8, background: '#282C34' }}>
+      {props.title}
+    </div>
+    <div style={{ padding: 4 }}>
       {props.values.map(item => (
         <div
           key={item.name}
