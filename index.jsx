@@ -96,6 +96,8 @@ function home(path) {
 
   var loadFile = meta => {
     setTitle(meta.path_display)
+    fileContent = "loading..."
+    renderPage()
     selectedFile = meta
     dbx
       .filesCachedDownload({ path: meta.path_lower, rev: meta.rev })
@@ -138,87 +140,10 @@ function home(path) {
 
   var renderPage = (search, term) => {
     if (hasRequestExpired(myReqId)) return
-
-    var files = filesData.entries
-    var menu
-    if (search) {
-      files = search
-      menu = [
-        {
-          name: 'Clear Search',
-          onClick: () => renderPage(),
-          icon: 'icon-close'
-        }
-      ]
-    } else {
-      menu = [
-        {
-          name: 'New Entry',
-          path: '#/new-page' + (path || ''),
-          icon: 'icon-doc'
-        },
-        {
-          name: 'New Folder',
-          path: '#/new-folder' + (path || ''),
-          icon: 'icon-folder-alt'
-        }
-      ]
-
-      if (selectedFile) {
-        menu.push({
-          title: 'ENTRY'
-        })
-
-        menu.push({
-          name: 'Edit',
-          path: '#/edit' + selectedFile.path_lower,
-          icon: 'icon-note'
-        })
-      }
-
-      if (
-        path ||
-        filesData.entries.filter(x => x['.tag'] === 'folder').length
-      ) {
-        menu.push({
-          title: 'FOLDERS'
-        })
-      }
-
-      if (path) {
-        menu.push({
-          name: 'Parent Folder',
-          path: '#/path' + getParent(path),
-          icon: 'icon-arrow-up'
-        })
-      }
-
-      if (filesData.entries.length === 0) {
-        menu.push({
-          title: 'DANGER'
-        })
-        menu.push({
-          name: 'Delete Folder',
-          onClick: deleteFolder,
-          icon: 'icon-trash'
-        })
-      }
-      filesData.entries
-        .filter(x => x['.tag'] === 'folder')
-        .reverse()
-        .forEach(x => {
-          menu.push({
-            name: x.name,
-            path: '#/path' + x.path_lower,
-            icon: 'icon-folder-alt'
-          })
-        })
-    }
-    eventThing.on('escape', renderPage)
     render(<Layout>
       <MainMenu />
-      <Sidebar />
-      <div>CONTENT</div>
+      <Sidebar onClick={loadFile} />
+      {fileContent && <PreviewPage fileName={path} fileContent={fileContent} />}
     </Layout>)
   }
 }

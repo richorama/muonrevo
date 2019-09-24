@@ -27,6 +27,7 @@ const Sidebar = class extends React.Component {
     this.getFiles = this.getFiles.bind(this)
     this.handleError = this.handleError.bind(this)
     this.handleFolderClick = this.handleFolderClick.bind(this)
+    this.handleFileClick = this.handleFileClick.bind(this)
     this.state = {
       path: '',
       files: [],
@@ -44,10 +45,9 @@ const Sidebar = class extends React.Component {
     this.dbx
       .filesListFolder({ path: this.state.path })
       .then(data => {
-        console.log(data)
         this.setState({
-          folders: data.entries.filter(x => x['.tag'] === 'folder'),
-          files: data.entries.filter(x => x['.tag'] === 'file'),
+          folders: data.entries.filter(x => x['.tag'] === 'folder').reverse(),
+          files: data.entries.filter(x => x['.tag'] === 'file').reverse(),
           loading: false
         })
       })
@@ -60,6 +60,10 @@ const Sidebar = class extends React.Component {
 
   handleFolderClick(folder) {
     this.setState({ path: folder.path_lower, loading: true }, this.getFiles)
+  }
+
+  handleFileClick(file) {
+    this.props.onClick(file)
   }
 
   renderFolders() {
@@ -95,7 +99,7 @@ const Sidebar = class extends React.Component {
       <RenderList
         icon="icon file alternate outline"
         title="FILES"
-        onClick={this.handleFolderClick}
+        onClick={this.handleFileClick}
         values={this.state.files}
       />
     )

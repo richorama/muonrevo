@@ -1,7 +1,6 @@
-var React = require('react')
-var Page = require('./page.jsx')
-var Panel = require('./panel.jsx')
-var renderContent = require('../lib/renderContent')
+const React = require('react')
+const Frag = React.Fragment
+const renderContent = require('../lib/renderContent')
 var eventThing = require('eventthing')
 
 module.exports = class extends React.Component {
@@ -36,21 +35,17 @@ module.exports = class extends React.Component {
 
   render() {
     return (
-      <Page>
-        <Panel title={toDisplayName(this.props.fileName)} noPadding={true}>
-          <div
-            ref="editContainer"
-            style={{
-              overflow: 'auto',
-              height: 'calc(100vh - 150px)',
-              margin: '20px',
-              background: 'white'
-            }}
-          >
-            <div dangerouslySetInnerHTML={this.createMarkup()} />
-          </div>
-        </Panel>
-      </Page>
+      <Frag>
+        <h1>{toDisplayName(this.props.fileName)}</h1>
+        <div
+          ref="editContainer"
+          style={{
+            margin: '20px',
+          }}
+        >
+          <div dangerouslySetInnerHTML={this.createMarkup()} />
+        </div>
+      </Frag>
     )
   }
 }
