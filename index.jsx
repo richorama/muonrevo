@@ -698,7 +698,6 @@ routie('/login', () => {
 
 routie('access_token=*', query => {
   var token = query.split('&')[0]
-  storage.put('accessToken', token)
   routie('/')
 })
 
